@@ -1,9 +1,10 @@
 import { motion } from 'framer-motion';
-import { Heart, Share2, Bookmark, Play } from 'lucide-react';
+import { Heart, Bookmark, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLikePost } from '@/hooks/useLikePost';
 import { cn } from '@/lib/utils';
 import CommentsSheet from './CommentsSheet';
+import ShareDropdown from './ShareDropdown';
 
 interface ContentCardProps {
   id: string;
@@ -133,9 +134,7 @@ const ContentCard = ({
         
         <div className="flex-1" />
         
-        <button className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all">
-          <Share2 className="w-3.5 h-3.5" />
-        </button>
+        <ShareDropdown title={title} url={`${window.location.origin}/article/${slug}`} />
         <button className="p-2 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
           <Bookmark className="w-3.5 h-3.5" />
         </button>
