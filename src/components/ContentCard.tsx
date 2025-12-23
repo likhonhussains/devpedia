@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Heart, Bookmark, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLikePost } from '@/hooks/useLikePost';
+import { useReadingHistory } from '@/hooks/useReadingHistory';
 import { cn } from '@/lib/utils';
 import CommentsSheet from './CommentsSheet';
 import ShareDropdown from './ShareDropdown';
@@ -34,8 +35,13 @@ const ContentCard = ({
   tags = [],
 }: ContentCardProps) => {
   const { isLiked, isLoading, toggleLike } = useLikePost(id);
+  const { trackRead } = useReadingHistory();
   const username = author.toLowerCase().replace(/\s+/g, '');
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+  const handleClick = () => {
+    trackRead(id);
+  };
 
   return (
     <motion.article
@@ -88,7 +94,7 @@ const ContentCard = ({
       </div>
 
       {/* Content */}
-      <Link to={`/article/${slug}`} className="block group/title">
+      <Link to={`/article/${slug}`} className="block group/title" onClick={handleClick}>
         <h3 className="font-semibold text-base mb-2 line-clamp-2 group-hover/title:text-primary transition-colors">
           {title}
         </h3>
