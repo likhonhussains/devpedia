@@ -25,9 +25,9 @@ const Header = () => {
         <nav className="max-w-5xl mx-auto flex items-center justify-between px-5 py-3 rounded-xl bg-card/80 backdrop-blur-xl border border-border/50">
           <Link to="/" className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">T</span>
+              <span className="text-primary-foreground font-bold text-sm">B</span>
             </div>
-            <span className="font-semibold text-sm">TechShare</span>
+            <span className="font-semibold text-sm">Basic Comet</span>
           </Link>
 
           <div className="flex items-center gap-1">

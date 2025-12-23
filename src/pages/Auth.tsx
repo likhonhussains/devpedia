@@ -107,7 +107,7 @@ const Auth = () => {
         } else {
           toast({
             title: 'Account created!',
-            description: 'Welcome to TechShare. Start sharing your knowledge!',
+            description: 'Welcome to Basic Comet. Start sharing your knowledge!',
           });
           navigate('/');
         }
@@ -135,9 +135,9 @@ const Auth = () => {
         >
           <Link to="/" className="inline-flex items-center gap-2 mb-8">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold">T</span>
+              <span className="text-primary-foreground font-bold">B</span>
             </div>
-            <span className="font-semibold text-lg">TechShare</span>
+            <span className="font-semibold text-lg">Basic Comet</span>
           </Link>
           <h1 className="text-2xl font-semibold mb-2">
             {isLogin ? 'Welcome back' : 'Create account'}
