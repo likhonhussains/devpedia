@@ -1,9 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
-import { FileText, StickyNote, Video, PenLine } from 'lucide-react';
+import { FileText, StickyNote, Video, PenLine, SearchX } from 'lucide-react';
 import ContentCard from './ContentCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -11,9 +11,10 @@ import { formatDistanceToNow } from 'date-fns';
 
 interface ContentFeedProps {
   activeTab: string;
+  searchQuery?: string;
 }
 
-const ContentFeed = ({ activeTab }: ContentFeedProps) => {
+const ContentFeed = ({ activeTab, searchQuery = '' }: ContentFeedProps) => {
   const queryClient = useQueryClient();
   const postType = activeTab === 'notes' ? 'note' : activeTab === 'videos' ? 'video' : 'post';
 
@@ -66,7 +67,20 @@ const ContentFeed = ({ activeTab }: ContentFeedProps) => {
     },
   });
 
-  const content = posts?.map((post) => ({
+  // Filter posts based on search query
+  const filteredPosts = useMemo(() => {
+    if (!posts || !searchQuery.trim()) return posts || [];
+    
+    const query = searchQuery.toLowerCase().trim();
+    return posts.filter(post => 
+      post.title.toLowerCase().includes(query) ||
+      post.content.toLowerCase().includes(query) ||
+      post.tags?.some(tag => tag.toLowerCase().includes(query)) ||
+      post.profile?.display_name?.toLowerCase().includes(query)
+    );
+  }, [posts, searchQuery]);
+
+  const content = filteredPosts.map((post) => ({
     id: post.id,
     type: post.type as 'post' | 'note' | 'video',
     title: post.title,
@@ -78,7 +92,7 @@ const ContentFeed = ({ activeTab }: ContentFeedProps) => {
     timestamp: formatDistanceToNow(new Date(post.created_at), { addSuffix: true }),
     tags: post.tags || [],
     thumbnail: post.video_url || undefined,
-  })) || [];
+  }));
 
   const getEmptyStateContent = () => {
     switch (postType) {
@@ -113,6 +127,26 @@ const ContentFeed = ({ activeTab }: ContentFeedProps) => {
     );
   }
 
+  // No results from search
+  if (content.length === 0 && searchQuery.trim()) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mt-12 max-w-md mx-auto text-center"
+      >
+        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-muted flex items-center justify-center">
+          <SearchX className="w-10 h-10 text-muted-foreground" />
+        </div>
+        <h3 className="text-xl font-semibold mb-2">No results found</h3>
+        <p className="text-muted-foreground">
+          No {postType}s matching "{searchQuery}" were found. Try a different search term.
+        </p>
+      </motion.div>
+    );
+  }
+
+  // Empty state (no posts at all)
   if (content.length === 0) {
     const emptyState = getEmptyStateContent();
     const Icon = emptyState.icon;

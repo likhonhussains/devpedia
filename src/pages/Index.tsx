@@ -11,6 +11,7 @@ import StatsCounter from '@/components/StatsCounter';
 const Index = () => {
   const [activeTab, setActiveTab] = useState('posts');
   const [showFeed, setShowFeed] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -38,7 +39,11 @@ const Index = () => {
           </motion.div>
 
           {/* Search */}
-          <SearchBar />
+          <SearchBar 
+            value={searchQuery} 
+            onChange={setSearchQuery}
+            onFocus={() => setShowFeed(true)}
+          />
 
           {/* Activity Feed (collapsed view) */}
           {!showFeed && <ActivityFeed />}
@@ -62,7 +67,7 @@ const Index = () => {
           {showFeed && (
             <>
               <ContentTabs activeTab={activeTab} onTabChange={setActiveTab} />
-              <ContentFeed activeTab={activeTab} />
+              <ContentFeed activeTab={activeTab} searchQuery={searchQuery} />
             </>
           )}
 
