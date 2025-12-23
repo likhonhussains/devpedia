@@ -193,6 +193,35 @@ export type Database = {
         }
         Relationships: []
       }
+      reading_history: {
+        Row: {
+          id: string
+          post_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reading_history_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
