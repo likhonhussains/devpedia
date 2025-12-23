@@ -1,8 +1,11 @@
 import { motion } from 'framer-motion';
 import { Heart, MessageCircle, Share2, Bookmark, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useLikePost } from '@/hooks/useLikePost';
+import { cn } from '@/lib/utils';
 
 interface ContentCardProps {
+  id: string;
   type: 'post' | 'note' | 'video';
   title: string;
   author: string;
@@ -16,6 +19,7 @@ interface ContentCardProps {
 }
 
 const ContentCard = ({
+  id,
   type,
   title,
   author,
@@ -27,6 +31,7 @@ const ContentCard = ({
   thumbnail,
   tags = [],
 }: ContentCardProps) => {
+  const { isLiked, isLoading, toggleLike } = useLikePost(id);
   // Generate username from author name
   const username = author.toLowerCase().replace(/\s+/g, '');
   // Generate slug from title
@@ -107,8 +112,15 @@ const ContentCard = ({
 
       {/* Actions */}
       <div className="flex items-center gap-4 pt-3 border-t border-border">
-        <button className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors">
-          <Heart className="w-4 h-4" />
+        <button
+          onClick={toggleLike}
+          disabled={isLoading}
+          className={cn(
+            "flex items-center gap-1.5 transition-colors",
+            isLiked ? "text-red-500" : "text-muted-foreground hover:text-red-500"
+          )}
+        >
+          <Heart className={cn("w-4 h-4", isLiked && "fill-current")} />
           <span className="text-xs font-medium">{likes}</span>
         </button>
         <button className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
