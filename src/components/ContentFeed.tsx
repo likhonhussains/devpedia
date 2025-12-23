@@ -2,8 +2,11 @@ import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
+import { FileText, StickyNote, Video, PenLine } from 'lucide-react';
 import ContentCard from './ContentCard';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
 
 interface ContentFeedProps {
@@ -26,7 +29,6 @@ const ContentFeed = ({ activeTab }: ContentFeedProps) => {
           table: 'posts',
         },
         () => {
-          // Invalidate all post queries to refetch
           queryClient.invalidateQueries({ queryKey: ['posts'] });
         }
       )
@@ -78,6 +80,29 @@ const ContentFeed = ({ activeTab }: ContentFeedProps) => {
     thumbnail: post.video_url || undefined,
   })) || [];
 
+  const getEmptyStateContent = () => {
+    switch (postType) {
+      case 'note':
+        return {
+          icon: StickyNote,
+          title: 'No notes yet',
+          description: 'Quick notes are perfect for sharing tips, snippets, and bite-sized knowledge.',
+        };
+      case 'video':
+        return {
+          icon: Video,
+          title: 'No videos yet',
+          description: 'Share tutorials, walkthroughs, and video content with the community.',
+        };
+      default:
+        return {
+          icon: FileText,
+          title: 'No posts yet',
+          description: 'Be the first to share your knowledge with the developer community.',
+        };
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="mt-8 max-w-4xl mx-auto grid gap-6 md:grid-cols-2">
@@ -85,6 +110,31 @@ const ContentFeed = ({ activeTab }: ContentFeedProps) => {
           <Skeleton key={i} className="h-64 rounded-xl" />
         ))}
       </div>
+    );
+  }
+
+  if (content.length === 0) {
+    const emptyState = getEmptyStateContent();
+    const Icon = emptyState.icon;
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mt-12 max-w-md mx-auto text-center"
+      >
+        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-primary/10 flex items-center justify-center">
+          <Icon className="w-10 h-10 text-primary" />
+        </div>
+        <h3 className="text-xl font-semibold mb-2">{emptyState.title}</h3>
+        <p className="text-muted-foreground mb-6">{emptyState.description}</p>
+        <Button asChild size="lg">
+          <Link to="/create">
+            <PenLine className="w-4 h-4 mr-2" />
+            Create the first {postType}
+          </Link>
+        </Button>
+      </motion.div>
     );
   }
 
@@ -98,7 +148,7 @@ const ContentFeed = ({ activeTab }: ContentFeedProps) => {
     >
       {content.map((item, index) => (
         <motion.div
-          key={item.title}
+          key={item.id}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: index * 0.1 }}
