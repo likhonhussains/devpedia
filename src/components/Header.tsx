@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { PenLine, LogOut, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const Header = () => {
   const { user, profile, signOut } = useAuth();
@@ -29,7 +30,8 @@ const Header = () => {
             <span className="font-semibold text-sm">DevPedia</span>
           </Link>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
             {user ? (
               <>
                 <Button
