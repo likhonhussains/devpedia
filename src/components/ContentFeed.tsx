@@ -1,5 +1,6 @@
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import ContentCard from './ContentCard';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,12 +11,35 @@ interface ContentFeedProps {
 }
 
 const ContentFeed = ({ activeTab }: ContentFeedProps) => {
+  const queryClient = useQueryClient();
   const postType = activeTab === 'notes' ? 'note' : activeTab === 'videos' ? 'video' : 'post';
+
+  // Subscribe to real-time updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('posts-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'posts',
+        },
+        () => {
+          // Invalidate all post queries to refetch
+          queryClient.invalidateQueries({ queryKey: ['posts'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const { data: posts, isLoading } = useQuery({
     queryKey: ['posts', postType],
     queryFn: async () => {
-      // Fetch posts
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select('*')
@@ -25,7 +49,6 @@ const ContentFeed = ({ activeTab }: ContentFeedProps) => {
       if (postsError) throw postsError;
       if (!postsData?.length) return [];
 
-      // Fetch profiles for all unique user_ids
       const userIds = [...new Set(postsData.map(p => p.user_id))];
       const { data: profilesData } = await supabase
         .from('profiles')
