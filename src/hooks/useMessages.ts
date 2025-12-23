@@ -8,6 +8,9 @@ interface Message {
   sender_id: string;
   content: string;
   created_at: string;
+  attachment_url?: string | null;
+  attachment_type?: string | null;
+  attachment_name?: string | null;
   sender?: {
     display_name: string;
     username: string;
@@ -252,15 +255,22 @@ export const useConversation = (conversationId: string | null) => {
       .eq('user_id', user.id);
   };
 
-  const sendMessage = async (content: string) => {
-    if (!conversationId || !user || !content.trim()) return false;
+  const sendMessage = async (
+    content: string, 
+    attachment?: { url: string; type: string; name: string }
+  ) => {
+    if (!conversationId || !user) return false;
+    if (!content.trim() && !attachment) return false;
 
     const { error } = await supabase
       .from('messages')
       .insert({
         conversation_id: conversationId,
         sender_id: user.id,
-        content: content.trim(),
+        content: content.trim() || (attachment ? `Sent ${attachment.type === 'image' ? 'an image' : 'a file'}` : ''),
+        attachment_url: attachment?.url || null,
+        attachment_type: attachment?.type || null,
+        attachment_name: attachment?.name || null,
       });
 
     if (error) {
@@ -269,6 +279,34 @@ export const useConversation = (conversationId: string | null) => {
     }
 
     return true;
+  };
+
+  const uploadAttachment = async (file: File): Promise<{ url: string; type: string; name: string } | null> => {
+    if (!user) return null;
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    
+    const { error: uploadError } = await supabase.storage
+      .from('message-attachments')
+      .upload(fileName, file);
+
+    if (uploadError) {
+      console.error('Error uploading file:', uploadError);
+      return null;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('message-attachments')
+      .getPublicUrl(fileName);
+
+    const isImage = file.type.startsWith('image/');
+    
+    return {
+      url: publicUrl,
+      type: isImage ? 'image' : 'file',
+      name: file.name,
+    };
   };
 
   // Subscribe to realtime messages
@@ -313,6 +351,7 @@ export const useConversation = (conversationId: string | null) => {
     messages,
     loading,
     sendMessage,
+    uploadAttachment,
     refetch: fetchMessages,
   };
 };

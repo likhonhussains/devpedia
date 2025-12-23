@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, MessageCircle, Send, Search } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Send, Search, Paperclip, Image, FileText, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import ParticleBackground from '@/components/ParticleBackground';
@@ -10,20 +10,25 @@ import { useMessages, useConversation } from '@/hooks/useMessages';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 const Messages = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeConversationId = searchParams.get('conversation');
   
   const { conversations, loading: conversationsLoading, getOrCreateConversation, refetch } = useMessages();
-  const { messages, loading: messagesLoading, sendMessage } = useConversation(activeConversationId);
+  const { messages, loading: messagesLoading, sendMessage, uploadAttachment } = useConversation(activeConversationId);
   
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [pendingAttachment, setPendingAttachment] = useState<{ url: string; type: string; name: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -34,10 +39,45 @@ const Messages = () => {
   }, [messages]);
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim()) return;
-    const success = await sendMessage(newMessage);
+    if (!newMessage.trim() && !pendingAttachment) return;
+    const success = await sendMessage(newMessage, pendingAttachment || undefined);
     if (success) {
       setNewMessage('');
+      setPendingAttachment(null);
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: 'File too large',
+        description: 'Maximum file size is 10MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    const attachment = await uploadAttachment(file);
+    setIsUploading(false);
+
+    if (attachment) {
+      setPendingAttachment(attachment);
+    } else {
+      toast({
+        title: 'Upload failed',
+        description: 'Could not upload file. Please try again.',
+        variant: 'destructive',
+      });
+    }
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -307,7 +347,36 @@ const Messages = () => {
                                   : "bg-secondary rounded-bl-md"
                               )}
                             >
-                              <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                              {/* Attachment */}
+                              {msg.attachment_url && (
+                                <div className="mb-2">
+                                  {msg.attachment_type === 'image' ? (
+                                    <a href={msg.attachment_url} target="_blank" rel="noopener noreferrer">
+                                      <img
+                                        src={msg.attachment_url}
+                                        alt={msg.attachment_name || 'Image'}
+                                        className="max-w-full rounded-lg max-h-64 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                      />
+                                    </a>
+                                  ) : (
+                                    <a
+                                      href={msg.attachment_url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className={cn(
+                                        "flex items-center gap-2 px-3 py-2 rounded-lg",
+                                        isOwn ? "bg-primary-foreground/10" : "bg-background/50"
+                                      )}
+                                    >
+                                      <FileText className="w-4 h-4 flex-shrink-0" />
+                                      <span className="text-sm truncate">{msg.attachment_name || 'File'}</span>
+                                    </a>
+                                  )}
+                                </div>
+                              )}
+                              {msg.content && !msg.content.startsWith('Sent ') && (
+                                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                              )}
                               <p className={cn(
                                 "text-xs mt-1",
                                 isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
@@ -324,7 +393,58 @@ const Messages = () => {
 
                   {/* Message Input */}
                   <div className="p-4 border-t border-border">
+                    {/* Pending Attachment Preview */}
+                    {pendingAttachment && (
+                      <div className="mb-3 p-3 bg-secondary rounded-lg flex items-center gap-3">
+                        {pendingAttachment.type === 'image' ? (
+                          <img
+                            src={pendingAttachment.url}
+                            alt={pendingAttachment.name}
+                            className="w-16 h-16 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 rounded-lg bg-background flex items-center justify-center">
+                            <FileText className="w-6 h-6 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{pendingAttachment.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {pendingAttachment.type === 'image' ? 'Image' : 'File'} ready to send
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setPendingAttachment(null)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                    
                     <div className="flex gap-2">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileSelect}
+                        className="hidden"
+                        accept="image/*,.pdf,.doc,.docx,.txt,.zip"
+                      />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                        className="flex-shrink-0"
+                      >
+                        {isUploading ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Paperclip className="w-4 h-4" />
+                        )}
+                      </Button>
                       <Input
                         placeholder="Type a message..."
                         value={newMessage}
@@ -332,7 +452,10 @@ const Messages = () => {
                         onKeyDown={handleKeyDown}
                         className="flex-1"
                       />
-                      <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
+                      <Button 
+                        onClick={handleSendMessage} 
+                        disabled={!newMessage.trim() && !pendingAttachment}
+                      >
                         <Send className="w-4 h-4" />
                       </Button>
                     </div>
