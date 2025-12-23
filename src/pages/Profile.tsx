@@ -5,6 +5,7 @@ import { ArrowLeft, MapPin, Link as LinkIcon, Calendar, Users, UserPlus, Edit3, 
 import { Button } from '@/components/ui/button';
 import ParticleBackground from '@/components/ParticleBackground';
 import ContentCard from '@/components/ContentCard';
+import FollowersModal from '@/components/FollowersModal';
 
 const tabs = [
   { id: 'posts', label: 'Posts', icon: FileText, count: 12 },
@@ -95,6 +96,13 @@ const Profile = () => {
   const { username } = useParams();
   const [activeTab, setActiveTab] = useState('posts');
   const [isFollowing, setIsFollowing] = useState(false);
+  const [followersModalOpen, setFollowersModalOpen] = useState(false);
+  const [followersModalType, setFollowersModalType] = useState<'followers' | 'following'>('followers');
+
+  const openFollowersModal = (type: 'followers' | 'following') => {
+    setFollowersModalType(type);
+    setFollowersModalOpen(true);
+  };
 
   const getContent = () => {
     switch (activeTab) {
@@ -208,12 +216,18 @@ const Profile = () => {
 
                 {/* Stats */}
                 <div className="flex items-center gap-6 mt-5">
-                  <button className="group flex items-center gap-2 hover:text-primary transition-colors">
+                  <button 
+                    onClick={() => openFollowersModal('followers')}
+                    className="group flex items-center gap-2 hover:text-primary transition-colors"
+                  >
                     <Users className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
                     <span className="font-semibold">{userData.followers.toLocaleString()}</span>
                     <span className="text-muted-foreground text-sm">followers</span>
                   </button>
-                  <button className="group flex items-center gap-2 hover:text-primary transition-colors">
+                  <button 
+                    onClick={() => openFollowersModal('following')}
+                    className="group flex items-center gap-2 hover:text-primary transition-colors"
+                  >
                     <span className="font-semibold">{userData.following.toLocaleString()}</span>
                     <span className="text-muted-foreground text-sm">following</span>
                   </button>
@@ -286,6 +300,14 @@ const Profile = () => {
           )}
         </div>
       </main>
+
+      {/* Followers/Following Modal */}
+      <FollowersModal
+        isOpen={followersModalOpen}
+        onClose={() => setFollowersModalOpen(false)}
+        type={followersModalType}
+        username={userData.username}
+      />
     </div>
   );
 };
