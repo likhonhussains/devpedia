@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
 import ContentTabs from '@/components/ContentTabs';
@@ -25,20 +24,11 @@ const Index = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="text-center mb-12"
+            className="text-center mb-10"
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-              <Sparkles className="w-3.5 h-3.5" />
-              Open knowledge platform
-            </div>
-            
-            <h1 className="text-5xl sm:text-6xl font-bold tracking-tight mb-4">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
               <span className="gradient-text">DevPedia</span>
             </h1>
-            
-            <p className="text-muted-foreground text-lg max-w-md mx-auto leading-relaxed">
-              A place where developers share knowledge, code snippets, and ideas with the community.
-            </p>
           </motion.div>
 
           {/* Search */}
