@@ -45,14 +45,8 @@ export const useLikePost = (postId: string, initialLiked: boolean = false) => {
 
         if (error) throw error;
 
-        // Decrement likes_count
-        await supabase.rpc('decrement_likes', { post_id: postId }).catch(() => {
-          // Fallback if RPC doesn't exist
-          return supabase
-            .from('posts')
-            .update({ likes_count: supabase.rpc('greatest', { a: 0, b: -1 }) })
-            .eq('id', postId);
-        });
+        // Decrement likes_count using the database function
+        await supabase.rpc('decrement_post_likes', { post_id: postId });
 
         return false;
       } else {
@@ -62,6 +56,9 @@ export const useLikePost = (postId: string, initialLiked: boolean = false) => {
           .insert({ post_id: postId, user_id: user.id });
 
         if (error) throw error;
+
+        // Increment likes_count using the database function
+        await supabase.rpc('increment_post_likes', { post_id: postId });
 
         return true;
       }
