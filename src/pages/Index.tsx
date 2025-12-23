@@ -17,14 +17,14 @@ const Index = () => {
       
       <Header />
 
-      <main className="relative z-10 pt-28 pb-20 px-4 sm:px-6">
+      <main className="relative z-10 pt-20 pb-8 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
           {/* Hero Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="text-center mb-10"
+            className="text-center mb-6"
           >
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
               <span className="gradient-text">DevPedia</span>
@@ -86,7 +86,7 @@ const Index = () => {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 py-8 px-6 border-t border-border/50">
+      <footer className="relative z-10 py-4 px-6 border-t border-border/50">
         <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-4 text-sm text-muted-foreground">
           <p>© 2026 DevPedia</p>
           <div className="flex gap-6">
