@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { Code2, Mail, Lock, User, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import ParticleBackground from '@/components/ParticleBackground';
 import { z } from 'zod';
 
 const loginSchema = z.object({
@@ -35,7 +34,6 @@ const Auth = () => {
     displayName: '',
   });
 
-  // Redirect if already logged in
   if (user) {
     navigate('/');
     return null;
@@ -126,28 +124,28 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden flex items-center justify-center">
-      <ParticleBackground />
-
-      <main className="relative z-10 w-full max-w-md mx-auto px-6 py-12">
-        {/* Logo */}
+    <div className="min-h-screen relative flex items-center justify-center bg-gradient-radial from-primary/5 via-background to-background">
+      <main className="relative z-10 w-full max-w-sm mx-auto px-6 py-12">
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="text-center mb-8"
         >
-          <Link to="/" className="inline-flex items-center gap-2 mb-6">
-            <Code2 className="w-8 h-8 text-primary" />
-            <span className="font-bold text-2xl">DevPedia</span>
+          <Link to="/" className="inline-flex items-center gap-2 mb-8">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground font-bold">D</span>
+            </div>
+            <span className="font-semibold text-lg">DevPedia</span>
           </Link>
-          <h1 className="text-2xl font-bold mb-2">
-            {isLogin ? 'Welcome back' : 'Create your account'}
+          <h1 className="text-2xl font-semibold mb-2">
+            {isLogin ? 'Welcome back' : 'Create account'}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             {isLogin 
-              ? 'Sign in to continue to DevPedia'
-              : 'Join the community of developers'
+              ? 'Sign in to continue'
+              : 'Join the developer community'
             }
           </p>
         </motion.div>
@@ -158,19 +156,19 @@ const Auth = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
           onSubmit={handleSubmit}
-          className="glass-card rounded-2xl p-6 space-y-4"
+          className="space-y-4"
         >
           {/* Email */}
           <div>
-            <label className="text-sm text-muted-foreground mb-1.5 block">Email</label>
+            <label className="text-sm font-medium mb-2 block">Email</label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 placeholder="you@example.com"
-                className="w-full bg-secondary rounded-lg py-3 pl-11 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full bg-card border border-border/50 rounded-lg py-2.5 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors"
                 required
               />
             </div>
@@ -180,32 +178,32 @@ const Auth = () => {
           {!isLogin && (
             <>
               <div>
-                <label className="text-sm text-muted-foreground mb-1.5 block">Username</label>
+                <label className="text-sm font-medium mb-2 block">Username</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
                   <input
                     type="text"
                     value={formData.username}
                     onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
-                    placeholder="yourname"
+                    placeholder="username"
                     maxLength={20}
-                    className="w-full bg-secondary rounded-lg py-3 pl-9 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono"
+                    className="w-full bg-card border border-border/50 rounded-lg py-2.5 pl-8 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors font-mono"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-sm text-muted-foreground mb-1.5 block">Display Name</label>
+                <label className="text-sm font-medium mb-2 block">Display Name</label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input
                     type="text"
                     value={formData.displayName}
                     onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
                     placeholder="Your Name"
                     maxLength={50}
-                    className="w-full bg-secondary rounded-lg py-3 pl-11 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="w-full bg-card border border-border/50 rounded-lg py-2.5 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors"
                     required
                   />
                 </div>
@@ -215,24 +213,24 @@ const Auth = () => {
 
           {/* Password */}
           <div>
-            <label className="text-sm text-muted-foreground mb-1.5 block">Password</label>
+            <label className="text-sm font-medium mb-2 block">Password</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 placeholder="••••••••"
                 minLength={6}
-                className="w-full bg-secondary rounded-lg py-3 pl-11 pr-11 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full bg-card border border-border/50 rounded-lg py-2.5 pl-10 pr-10 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
@@ -241,13 +239,14 @@ const Auth = () => {
           <Button
             type="submit"
             disabled={isLoading}
-            className="w-full gap-2"
+            className="w-full gap-2 mt-6"
+            size="lg"
           >
             {isLoading ? (
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full"
+                className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full"
               />
             ) : (
               <>
@@ -258,21 +257,19 @@ const Auth = () => {
           </Button>
 
           {/* Toggle Login/Signup */}
-          <div className="text-center pt-4 border-t border-border">
-            <p className="text-sm text-muted-foreground">
-              {isLogin ? "Don't have an account?" : 'Already have an account?'}
-              <button
-                type="button"
-                onClick={() => {
-                  setIsLogin(!isLogin);
-                  setFormData({ email: '', password: '', username: '', displayName: '' });
-                }}
-                className="text-primary hover:underline ml-1 font-medium"
-              >
-                {isLogin ? 'Sign up' : 'Sign in'}
-              </button>
-            </p>
-          </div>
+          <p className="text-center text-sm text-muted-foreground pt-4">
+            {isLogin ? "Don't have an account?" : 'Already have an account?'}
+            <button
+              type="button"
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setFormData({ email: '', password: '', username: '', displayName: '' });
+              }}
+              className="text-primary hover:underline ml-1 font-medium"
+            >
+              {isLogin ? 'Sign up' : 'Sign in'}
+            </button>
+          </p>
         </motion.form>
 
         {/* Back to home */}
@@ -280,13 +277,13 @@ const Auth = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className="text-center mt-6"
+          className="text-center mt-8"
         >
           <Link
             to="/"
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            ← Back to DevPedia
+            ← Back to home
           </Link>
         </motion.div>
       </main>

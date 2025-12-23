@@ -1,8 +1,8 @@
-import { motion } from 'framer-motion';
-import { Code2, LogIn, Plus, LogOut } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { PenLine, LogOut, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 
 const Header = () => {
   const { user, profile, signOut } = useAuth();
@@ -15,70 +15,70 @@ const Header = () => {
 
   return (
     <motion.header
-      initial={{ opacity: 0, y: -20 }}
+      initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-      className="fixed top-0 left-0 right-0 z-50 px-6 py-4"
+      transition={{ duration: 0.4 }}
+      className="fixed top-0 left-0 right-0 z-50"
     >
-      <nav className="max-w-7xl mx-auto flex items-center justify-between">
-        <Link to="/">
-          <motion.div
-            className="flex items-center gap-2"
-            whileHover={{ scale: 1.02 }}
-          >
-            <Code2 className="w-6 h-6 text-primary" />
-            <span className="font-semibold text-lg">DevPedia</span>
-          </motion.div>
-        </Link>
+      <div className="mx-4 mt-4">
+        <nav className="max-w-5xl mx-auto flex items-center justify-between px-5 py-3 rounded-xl bg-card/80 backdrop-blur-xl border border-border/50">
+          <Link to="/" className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-sm">D</span>
+            </div>
+            <span className="font-semibold text-sm">DevPedia</span>
+          </Link>
 
-        <div className="flex items-center gap-2 sm:gap-4">
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground hidden sm:flex">
-            Explore
-          </Button>
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground hidden sm:flex">
-            Community
-          </Button>
-          
-          {user && profile ? (
-            <>
-              <Link to="/create">
-                <Button size="sm" className="gap-2">
-                  <Plus className="w-4 h-4" />
+          <div className="flex items-center gap-2">
+            {user ? (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-2 text-muted-foreground hover:text-foreground"
+                  onClick={() => navigate('/create')}
+                >
+                  <PenLine className="w-4 h-4" />
                   <span className="hidden sm:inline">Create</span>
                 </Button>
-              </Link>
-              <Link to={`/profile/${profile.username}`}>
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors"
+
+                <Link
+                  to={`/profile/${profile?.username || 'me'}`}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-secondary/50 transition-colors"
                 >
                   <img
-                    src={profile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
-                    alt="Profile"
-                    className="w-7 h-7 rounded-full border-2 border-primary/30"
+                    src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
+                    alt="Avatar"
+                    className="w-6 h-6 rounded-full ring-1 ring-border"
                   />
-                  <span className="text-sm font-medium hidden md:inline">{profile.display_name}</span>
-                </motion.div>
-              </Link>
+                  <span className="text-sm font-medium hidden sm:inline max-w-24 truncate">
+                    {profile?.display_name}
+                  </span>
+                </Link>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="w-8 h-8 text-muted-foreground hover:text-foreground"
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </>
+            ) : (
               <Button
-                variant="ghost"
+                variant="default"
                 size="sm"
-                onClick={handleSignOut}
-                className="text-muted-foreground hover:text-foreground"
+                onClick={() => navigate('/auth')}
+                className="gap-2"
               >
-                <LogOut className="w-4 h-4" />
+                <User className="w-4 h-4" />
+                Sign in
               </Button>
-            </>
-          ) : (
-            <Link to="/auth">
-              <Button variant="outline" size="sm" className="gap-2">
-                <LogIn className="w-4 h-4" />
-                <span className="hidden sm:inline">Login</span>
-              </Button>
-            </Link>
-          )}
-        </div>
-      </nav>
+            )}
+          </div>
+        </nav>
+      </div>
     </motion.header>
   );
 };

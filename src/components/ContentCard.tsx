@@ -33,32 +33,29 @@ const ContentCard = ({
   tags = [],
 }: ContentCardProps) => {
   const { isLiked, isLoading, toggleLike } = useLikePost(id);
-  // Generate username from author name
   const username = author.toLowerCase().replace(/\s+/g, '');
-  // Generate slug from title
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
   return (
     <motion.article
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -4 }}
-      className="content-card"
+      whileHover={{ y: -2 }}
+      transition={{ duration: 0.2 }}
+      className="group rounded-xl bg-card border border-border/50 p-5 transition-all duration-300 hover:border-border hover:shadow-elevated"
     >
       {/* Video Thumbnail */}
       {type === 'video' && thumbnail && (
-        <div className="relative mb-4 rounded-lg overflow-hidden group">
+        <div className="relative mb-4 rounded-lg overflow-hidden">
           <img
             src={thumbnail}
             alt={title}
-            className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+            className="w-full h-44 object-cover transition-transform duration-500 group-hover:scale-105"
           />
-          <div className="absolute inset-0 bg-background/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <div className="w-14 h-14 rounded-full bg-primary/90 flex items-center justify-center">
-              <Play className="w-6 h-6 text-primary-foreground ml-1" />
+          <div className="absolute inset-0 bg-background/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-glow">
+              <Play className="w-5 h-5 text-primary-foreground ml-0.5" />
             </div>
           </div>
-          <div className="absolute bottom-2 right-2 px-2 py-1 bg-background/80 rounded text-xs font-mono">
+          <div className="absolute bottom-2 right-2 px-2 py-0.5 bg-background/90 rounded text-xs font-mono text-foreground">
             12:34
           </div>
         </div>
@@ -70,66 +67,77 @@ const ContentCard = ({
           <img
             src={authorAvatar}
             alt={author}
-            className="w-10 h-10 rounded-full border-2 border-border hover:border-primary transition-colors"
+            className="w-8 h-8 rounded-full ring-1 ring-border transition-all hover:ring-primary/50"
           />
         </Link>
-        <div>
+        <div className="min-w-0 flex-1">
           <Link
             to={`/profile/${username}`}
-            className="font-medium text-sm hover:text-primary transition-colors"
+            className="text-sm font-medium hover:text-primary transition-colors truncate block"
           >
             {author}
           </Link>
           <p className="text-xs text-muted-foreground">{timestamp}</p>
         </div>
         {type === 'note' && (
-          <span className="ml-auto px-2 py-1 text-xs rounded-md bg-accent/20 text-accent font-mono">
-            NOTE
+          <span className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary font-medium">
+            Note
           </span>
         )}
       </div>
 
       {/* Content */}
-      <Link to={`/article/${slug}`}>
-        <h3 className="font-semibold text-lg mb-2 line-clamp-2 hover:text-primary transition-colors cursor-pointer">
+      <Link to={`/article/${slug}`} className="block group/title">
+        <h3 className="font-semibold text-base mb-2 line-clamp-2 group-hover/title:text-primary transition-colors">
           {title}
         </h3>
       </Link>
-      <p className="text-muted-foreground text-sm mb-4 line-clamp-3">{content}</p>
+      <p className="text-muted-foreground text-sm leading-relaxed mb-4 line-clamp-2">{content}</p>
 
       {/* Tags */}
       {tags.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4">
-          {tags.map((tag) => (
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
-              className="px-2 py-1 text-xs rounded-md bg-secondary text-muted-foreground font-mono hover:text-primary transition-colors"
+              className="px-2 py-0.5 text-xs rounded-full bg-secondary/80 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
-              #{tag}
+              {tag}
             </span>
           ))}
+          {tags.length > 3 && (
+            <span className="px-2 py-0.5 text-xs text-muted-foreground">
+              +{tags.length - 3}
+            </span>
+          )}
         </div>
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-4 pt-3 border-t border-border">
+      <div className="flex items-center gap-1 pt-3 border-t border-border/50">
         <button
           onClick={toggleLike}
           disabled={isLoading}
           className={cn(
-            "flex items-center gap-1.5 transition-colors",
-            isLiked ? "text-red-500" : "text-muted-foreground hover:text-red-500"
+            "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-all text-sm",
+            isLiked 
+              ? "text-red-400 bg-red-500/10" 
+              : "text-muted-foreground hover:text-red-400 hover:bg-red-500/10"
           )}
         >
-          <Heart className={cn("w-4 h-4", isLiked && "fill-current")} />
+          <Heart className={cn("w-3.5 h-3.5", isLiked && "fill-current")} />
           <span className="text-xs font-medium">{likes}</span>
         </button>
+        
         <CommentsSheet postId={id} postTitle={title} commentsCount={comments} />
-        <button className="text-muted-foreground hover:text-foreground transition-colors ml-auto">
-          <Share2 className="w-4 h-4" />
+        
+        <div className="flex-1" />
+        
+        <button className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all">
+          <Share2 className="w-3.5 h-3.5" />
         </button>
-        <button className="text-muted-foreground hover:text-primary transition-colors">
-          <Bookmark className="w-4 h-4" />
+        <button className="p-2 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
+          <Bookmark className="w-3.5 h-3.5" />
         </button>
       </div>
     </motion.article>
