@@ -1,8 +1,9 @@
 import { motion } from 'framer-motion';
-import { Heart, MessageCircle, Share2, Bookmark, Play } from 'lucide-react';
+import { Heart, Share2, Bookmark, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLikePost } from '@/hooks/useLikePost';
 import { cn } from '@/lib/utils';
+import CommentsSheet from './CommentsSheet';
 
 interface ContentCardProps {
   id: string;
@@ -123,10 +124,7 @@ const ContentCard = ({
           <Heart className={cn("w-4 h-4", isLiked && "fill-current")} />
           <span className="text-xs font-medium">{likes}</span>
         </button>
-        <button className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
-          <MessageCircle className="w-4 h-4" />
-          <span className="text-xs font-medium">{comments}</span>
-        </button>
+        <CommentsSheet postId={id} postTitle={title} commentsCount={comments} />
         <button className="text-muted-foreground hover:text-foreground transition-colors ml-auto">
           <Share2 className="w-4 h-4" />
         </button>
