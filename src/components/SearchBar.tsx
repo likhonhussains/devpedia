@@ -9,7 +9,7 @@ interface SearchBarProps {
 
 const SearchBar = ({ value, onChange, onFocus }: SearchBarProps) => {
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto">
       <div className="relative group">
         {/* Glow effect on focus */}
         <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 rounded-xl blur opacity-0 group-focus-within:opacity-100 transition-opacity duration-300" />
