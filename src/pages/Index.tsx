@@ -98,7 +98,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="relative z-10 py-8 px-6 border-t border-border/50">
         <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-4 text-sm text-muted-foreground">
-          <p>© 2024 DevPedia</p>
+          <p>© 2026 DevPedia</p>
           <div className="flex gap-6">
             <a href="#" className="hover:text-foreground transition-colors">Terms</a>
             <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
