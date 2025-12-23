@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Code2, LogIn, User } from 'lucide-react';
+import { Code2, LogIn, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 
@@ -28,28 +28,36 @@ const Header = () => {
           </motion.div>
         </Link>
 
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground hidden sm:flex">
             Explore
           </Button>
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground hidden sm:flex">
             Community
           </Button>
           
           {currentUser ? (
-            <Link to={`/profile/${currentUser.username}`}>
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors"
-              >
-                <img
-                  src={currentUser.avatar}
-                  alt="Profile"
-                  className="w-7 h-7 rounded-full border-2 border-primary/30"
-                />
-                <span className="text-sm font-medium hidden sm:inline">Profile</span>
-              </motion.div>
-            </Link>
+            <>
+              <Link to="/create">
+                <Button size="sm" className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  <span className="hidden sm:inline">Create</span>
+                </Button>
+              </Link>
+              <Link to={`/profile/${currentUser.username}`}>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors"
+                >
+                  <img
+                    src={currentUser.avatar}
+                    alt="Profile"
+                    className="w-7 h-7 rounded-full border-2 border-primary/30"
+                  />
+                  <span className="text-sm font-medium hidden md:inline">Profile</span>
+                </motion.div>
+              </Link>
+            </>
           ) : (
             <Button variant="outline" size="sm" className="gap-2">
               <LogIn className="w-4 h-4" />
