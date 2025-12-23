@@ -1,13 +1,16 @@
 import { motion } from 'framer-motion';
-import { Code2, LogIn, Plus } from 'lucide-react';
+import { Code2, LogIn, Plus, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Header = () => {
-  // Mock logged in user - in real app this would come from auth context
-  const currentUser = {
-    username: 'sarahchen',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
+  const { user, profile, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
   };
 
   return (
@@ -36,7 +39,7 @@ const Header = () => {
             Community
           </Button>
           
-          {currentUser ? (
+          {user && profile ? (
             <>
               <Link to="/create">
                 <Button size="sm" className="gap-2">
@@ -44,25 +47,35 @@ const Header = () => {
                   <span className="hidden sm:inline">Create</span>
                 </Button>
               </Link>
-              <Link to={`/profile/${currentUser.username}`}>
+              <Link to={`/profile/${profile.username}`}>
                 <motion.div
                   whileHover={{ scale: 1.05 }}
                   className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors"
                 >
                   <img
-                    src={currentUser.avatar}
+                    src={profile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
                     alt="Profile"
                     className="w-7 h-7 rounded-full border-2 border-primary/30"
                   />
-                  <span className="text-sm font-medium hidden md:inline">Profile</span>
+                  <span className="text-sm font-medium hidden md:inline">{profile.display_name}</span>
                 </motion.div>
               </Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSignOut}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <LogOut className="w-4 h-4" />
+              </Button>
             </>
           ) : (
-            <Button variant="outline" size="sm" className="gap-2">
-              <LogIn className="w-4 h-4" />
-              Login
-            </Button>
+            <Link to="/auth">
+              <Button variant="outline" size="sm" className="gap-2">
+                <LogIn className="w-4 h-4" />
+                <span className="hidden sm:inline">Login</span>
+              </Button>
+            </Link>
           )}
         </div>
       </nav>
