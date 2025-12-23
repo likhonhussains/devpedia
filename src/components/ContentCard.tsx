@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Heart, MessageCircle, Share2, Bookmark, Play } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface ContentCardProps {
   type: 'post' | 'note' | 'video';
@@ -26,6 +27,9 @@ const ContentCard = ({
   thumbnail,
   tags = [],
 }: ContentCardProps) => {
+  // Generate username from author name
+  const username = author.toLowerCase().replace(/\s+/g, '');
+
   return (
     <motion.article
       initial={{ opacity: 0, y: 20 }}
@@ -54,13 +58,20 @@ const ContentCard = ({
 
       {/* Header */}
       <div className="flex items-center gap-3 mb-3">
-        <img
-          src={authorAvatar}
-          alt={author}
-          className="w-10 h-10 rounded-full border-2 border-border"
-        />
+        <Link to={`/profile/${username}`} className="flex-shrink-0">
+          <img
+            src={authorAvatar}
+            alt={author}
+            className="w-10 h-10 rounded-full border-2 border-border hover:border-primary transition-colors"
+          />
+        </Link>
         <div>
-          <p className="font-medium text-sm">{author}</p>
+          <Link
+            to={`/profile/${username}`}
+            className="font-medium text-sm hover:text-primary transition-colors"
+          >
+            {author}
+          </Link>
           <p className="text-xs text-muted-foreground">{timestamp}</p>
         </div>
         {type === 'note' && (
