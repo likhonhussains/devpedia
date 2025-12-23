@@ -1,13 +1,16 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { PenLine, LogOut, User, History } from 'lucide-react';
+import { PenLine, LogOut, User, History, MessageCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import ThemeToggle from '@/components/ThemeToggle';
+import { useMessages } from '@/hooks/useMessages';
 
 const Header = () => {
   const { user, profile, signOut } = useAuth();
+  const { getTotalUnreadCount } = useMessages();
   const navigate = useNavigate();
+  const unreadCount = getTotalUnreadCount();
 
   const handleSignOut = async () => {
     await signOut();
@@ -42,6 +45,20 @@ const Header = () => {
                 >
                   <History className="w-4 h-4" />
                   <span className="hidden sm:inline">History</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-2 text-muted-foreground hover:text-foreground relative"
+                  onClick={() => navigate('/messages')}
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span className="hidden sm:inline">Messages</span>
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
                 </Button>
                 <Button
                   variant="ghost"
