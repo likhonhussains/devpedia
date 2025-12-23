@@ -11,13 +11,13 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative flex flex-col">
       {/* Subtle gradient background */}
       <div className="fixed inset-0 bg-gradient-radial from-primary/5 via-background to-background pointer-events-none" />
       
       <Header />
 
-      <main className="relative z-10 pt-[80px] pb-[80px] px-4 sm:px-6">
+      <main className="relative z-10 flex-1 flex flex-col justify-center pt-[80px] pb-[80px] px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
           {/* Hero Section */}
           <motion.div
