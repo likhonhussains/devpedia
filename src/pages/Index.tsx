@@ -18,7 +18,7 @@ const Index = () => {
       <Header />
 
       <main className="relative z-10 flex-1 flex flex-col justify-center pt-[80px] pb-[80px] px-4 sm:px-6">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-6xl mx-auto w-full">
           {/* Hero Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -36,6 +36,7 @@ const Index = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            className="w-full"
           >
             <SearchBar 
               value={searchQuery} 
