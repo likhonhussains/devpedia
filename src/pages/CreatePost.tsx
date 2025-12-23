@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import ParticleBackground from '@/components/ParticleBackground';
 import Header from '@/components/Header';
 
@@ -41,6 +43,7 @@ const popularTags = [
 const CreatePost = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, loading } = useAuth();
   const [contentType, setContentType] = useState('post');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -49,6 +52,18 @@ const CreatePost = () => {
   const [customTag, setCustomTag] = useState('');
   const [isPreview, setIsPreview] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!loading && !user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to create content.",
+        variant: "destructive",
+      });
+      navigate('/auth');
+    }
+  }, [user, loading, navigate, toast]);
 
   const toggleTag = (tag: string) => {
     if (selectedTags.includes(tag)) {
@@ -131,6 +146,16 @@ const CreatePost = () => {
   };
 
   const handlePublish = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to create content.",
+        variant: "destructive",
+      });
+      navigate('/auth');
+      return;
+    }
+
     if (!title.trim()) {
       toast({
         title: "Title required",
@@ -160,17 +185,43 @@ const CreatePost = () => {
 
     setIsPublishing(true);
 
-    // Simulate publishing delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      const { error } = await supabase.from('posts').insert({
+        user_id: user.id,
+        type: contentType,
+        title: title.trim(),
+        content: content.trim(),
+        video_url: contentType === 'video' ? videoUrl.trim() : null,
+        tags: selectedTags,
+      });
 
-    toast({
-      title: "Post published!",
-      description: "Your post is now live and visible to the community.",
-    });
+      if (error) throw error;
 
-    setIsPublishing(false);
-    navigate('/');
+      toast({
+        title: "Post published!",
+        description: "Your post is now live and visible to the community.",
+      });
+
+      navigate('/');
+    } catch (error: any) {
+      console.error('Error publishing post:', error);
+      toast({
+        title: "Failed to publish",
+        description: error.message || "An error occurred while publishing your post.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPublishing(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen relative overflow-hidden">
