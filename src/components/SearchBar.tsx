@@ -9,20 +9,20 @@ interface SearchBarProps {
 
 const SearchBar = ({ value, onChange, onFocus }: SearchBarProps) => {
   return (
-    <div className="w-full max-w-xl mx-auto">
+    <div className="w-full max-w-2xl mx-auto">
       <div className="relative group">
         {/* Glow effect on focus */}
         <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 rounded-xl blur opacity-0 group-focus-within:opacity-100 transition-opacity duration-300" />
         
         <div className="relative flex items-center bg-card border border-border/50 rounded-xl transition-all duration-200 group-focus-within:border-primary/30">
-          <Search className="absolute left-4 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-4 w-5 h-5 text-muted-foreground" />
           <input
             type="text"
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onFocus={onFocus}
             placeholder="Search posts, notes, or topics..."
-            className="w-full bg-transparent py-3.5 pl-11 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+            className="w-full bg-transparent py-4 pl-12 pr-12 text-base text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
           {value && (
             <motion.button
