@@ -17,7 +17,7 @@ const Index = () => {
       
       <Header />
 
-      <main className="relative z-10 pt-20 pb-8 px-4 sm:px-6">
+      <main className="relative z-10 pt-24 pb-16 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
           {/* Hero Section */}
           <motion.div
