@@ -29,13 +29,15 @@ const ContentCard = ({
 }: ContentCardProps) => {
   // Generate username from author name
   const username = author.toLowerCase().replace(/\s+/g, '');
+  // Generate slug from title
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
   return (
     <motion.article
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -4 }}
-      className="content-card cursor-pointer"
+      className="content-card"
     >
       {/* Video Thumbnail */}
       {type === 'video' && thumbnail && (
@@ -82,7 +84,11 @@ const ContentCard = ({
       </div>
 
       {/* Content */}
-      <h3 className="font-semibold text-lg mb-2 line-clamp-2">{title}</h3>
+      <Link to={`/article/${slug}`}>
+        <h3 className="font-semibold text-lg mb-2 line-clamp-2 hover:text-primary transition-colors cursor-pointer">
+          {title}
+        </h3>
+      </Link>
       <p className="text-muted-foreground text-sm mb-4 line-clamp-3">{content}</p>
 
       {/* Tags */}
