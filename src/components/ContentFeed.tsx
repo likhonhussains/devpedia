@@ -15,29 +15,29 @@ const ContentFeed = ({ activeTab }: ContentFeedProps) => {
   const { data: posts, isLoading } = useQuery({
     queryKey: ['posts', postType],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch posts
+      const { data: postsData, error: postsError } = await supabase
         .from('posts')
-        .select(`
-          id,
-          type,
-          title,
-          content,
-          video_url,
-          tags,
-          likes_count,
-          comments_count,
-          created_at,
-          user_id,
-          profiles!posts_user_id_fkey (
-            display_name,
-            avatar_url
-          )
-        `)
+        .select('*')
         .eq('type', postType)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data;
+      if (postsError) throw postsError;
+      if (!postsData?.length) return [];
+
+      // Fetch profiles for all unique user_ids
+      const userIds = [...new Set(postsData.map(p => p.user_id))];
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, avatar_url')
+        .in('user_id', userIds);
+
+      const profilesMap = new Map(profilesData?.map(p => [p.user_id, p]) || []);
+
+      return postsData.map(post => ({
+        ...post,
+        profile: profilesMap.get(post.user_id),
+      }));
     },
   });
 
@@ -45,8 +45,8 @@ const ContentFeed = ({ activeTab }: ContentFeedProps) => {
     id: post.id,
     type: post.type as 'post' | 'note' | 'video',
     title: post.title,
-    author: (post.profiles as any)?.display_name || 'Anonymous',
-    authorAvatar: (post.profiles as any)?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.user_id}`,
+    author: post.profile?.display_name || 'Anonymous',
+    authorAvatar: post.profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.user_id}`,
     content: post.content,
     likes: post.likes_count,
     comments: post.comments_count,
