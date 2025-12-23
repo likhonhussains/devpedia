@@ -1,119 +1,219 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, MapPin, Link as LinkIcon, Calendar, Users, UserPlus, Edit3, FileText, StickyNote, Video } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, MapPin, Link as LinkIcon, Calendar, Users, UserPlus, Edit3, FileText, StickyNote, Video, PenSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ParticleBackground from '@/components/ParticleBackground';
 import ContentCard from '@/components/ContentCard';
 import FollowersModal from '@/components/FollowersModal';
+import ProfileEditSheet from '@/components/ProfileEditSheet';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
-const tabs = [
-  { id: 'posts', label: 'Posts', icon: FileText, count: 12 },
-  { id: 'notes', label: 'Notes', icon: StickyNote, count: 28 },
-  { id: 'videos', label: 'Videos', icon: Video, count: 5 },
-];
+interface ProfileData {
+  id: string;
+  user_id: string;
+  username: string;
+  display_name: string;
+  avatar_url: string | null;
+  bio: string | null;
+  location: string | null;
+  website: string | null;
+  created_at: string;
+}
 
-// Mock user data
-const userData = {
-  username: 'sarahchen',
-  displayName: 'Sarah Chen',
-  avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
-  bio: 'Senior Frontend Engineer @TechCorp | React enthusiast | Building tools that make developers happy. Previously @StartupX. Open source contributor.',
-  location: 'San Francisco, CA',
-  website: 'sarahchen.dev',
-  joinDate: 'March 2023',
-  followers: 2847,
-  following: 342,
-  isOwnProfile: true,
-};
-
-const userContent = {
-  posts: [
-    {
-      type: 'post' as const,
-      title: 'Understanding React Server Components: A Deep Dive',
-      author: 'Sarah Chen',
-      authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
-      content: 'React Server Components represent a fundamental shift in how we think about React applications...',
-      likes: 234,
-      comments: 45,
-      timestamp: '2 hours ago',
-      tags: ['react', 'nextjs', 'webdev'],
-    },
-    {
-      type: 'post' as const,
-      title: 'State Management in 2024: What Actually Works',
-      author: 'Sarah Chen',
-      authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
-      content: 'After years of trying every state management solution, here\'s what I actually recommend for different project sizes...',
-      likes: 567,
-      comments: 89,
-      timestamp: '2 days ago',
-      tags: ['react', 'state', 'redux'],
-    },
-  ],
-  notes: [
-    {
-      type: 'note' as const,
-      title: 'Quick Tip: useCallback vs useMemo',
-      author: 'Sarah Chen',
-      authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
-      content: 'useCallback memoizes functions, useMemo memoizes values. Use useCallback when passing callbacks to optimized child components.',
-      likes: 345,
-      comments: 23,
-      timestamp: '1 day ago',
-      tags: ['react', 'hooks'],
-    },
-    {
-      type: 'note' as const,
-      title: 'CSS Container Queries Cheat Sheet',
-      author: 'Sarah Chen',
-      authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
-      content: '@container (min-width: 400px) { .card { display: grid; } } - Use container-type: inline-size on parent.',
-      likes: 189,
-      comments: 12,
-      timestamp: '3 days ago',
-      tags: ['css', 'tips'],
-    },
-  ],
-  videos: [
-    {
-      type: 'video' as const,
-      title: 'Building a Design System from Scratch',
-      author: 'Sarah Chen',
-      authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
-      content: 'Learn how to create a scalable design system with tokens, components, and documentation.',
-      likes: 892,
-      comments: 67,
-      timestamp: '1 week ago',
-      thumbnail: 'https://images.unsplash.com/photo-1559028012-481c04fa702d?w=600&q=80',
-      tags: ['design', 'tutorial'],
-    },
-  ],
-};
+interface PostData {
+  id: string;
+  title: string;
+  content: string;
+  type: string;
+  likes_count: number;
+  comments_count: number;
+  created_at: string;
+  tags: string[] | null;
+  video_url: string | null;
+}
 
 const Profile = () => {
   const { username } = useParams();
+  const navigate = useNavigate();
+  const { user, profile: currentUserProfile } = useAuth();
+  
   const [activeTab, setActiveTab] = useState('posts');
   const [isFollowing, setIsFollowing] = useState(false);
   const [followersModalOpen, setFollowersModalOpen] = useState(false);
   const [followersModalType, setFollowersModalType] = useState<'followers' | 'following'>('followers');
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
+  
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [userPosts, setUserPosts] = useState<PostData[]>([]);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const isOwnProfile = user && profileData?.user_id === user.id;
+
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      setLoading(true);
+
+      // If viewing own profile via /profile without username
+      if (!username && currentUserProfile) {
+        setProfileData(currentUserProfile as ProfileData);
+        await fetchUserContent(currentUserProfile.user_id);
+        await fetchFollowCounts(currentUserProfile.user_id);
+        setLoading(false);
+        return;
+      }
+
+      // If no username and not logged in, redirect
+      if (!username && !user) {
+        navigate('/auth');
+        return;
+      }
+
+      // Fetch profile by username
+      if (username) {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('username', username)
+          .maybeSingle();
+
+        if (error || !profile) {
+          navigate('/');
+          return;
+        }
+
+        setProfileData(profile);
+        await fetchUserContent(profile.user_id);
+        await fetchFollowCounts(profile.user_id);
+        
+        // Check if current user is following this profile
+        if (user && user.id !== profile.user_id) {
+          const { data: followData } = await supabase
+            .from('followers')
+            .select('id')
+            .eq('follower_id', user.id)
+            .eq('following_id', profile.user_id)
+            .maybeSingle();
+          
+          setIsFollowing(!!followData);
+        }
+      }
+
+      setLoading(false);
+    };
+
+    const fetchUserContent = async (userId: string) => {
+      const { data: posts } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      setUserPosts(posts || []);
+    };
+
+    const fetchFollowCounts = async (userId: string) => {
+      const { count: followers } = await supabase
+        .from('followers')
+        .select('*', { count: 'exact', head: true })
+        .eq('following_id', userId);
+
+      const { count: following } = await supabase
+        .from('followers')
+        .select('*', { count: 'exact', head: true })
+        .eq('follower_id', userId);
+
+      setFollowersCount(followers || 0);
+      setFollowingCount(following || 0);
+    };
+
+    fetchProfileData();
+  }, [username, user, currentUserProfile, navigate]);
+
+  // Refresh profile data when edit sheet closes
+  useEffect(() => {
+    if (!editSheetOpen && currentUserProfile && isOwnProfile) {
+      setProfileData(currentUserProfile as ProfileData);
+    }
+  }, [editSheetOpen, currentUserProfile, isOwnProfile]);
+
+  const handleFollow = async () => {
+    if (!user || !profileData) return;
+
+    if (isFollowing) {
+      await supabase
+        .from('followers')
+        .delete()
+        .eq('follower_id', user.id)
+        .eq('following_id', profileData.user_id);
+      
+      setIsFollowing(false);
+      setFollowersCount((prev) => prev - 1);
+    } else {
+      await supabase
+        .from('followers')
+        .insert({ follower_id: user.id, following_id: profileData.user_id });
+      
+      setIsFollowing(true);
+      setFollowersCount((prev) => prev + 1);
+    }
+  };
 
   const openFollowersModal = (type: 'followers' | 'following') => {
     setFollowersModalType(type);
     setFollowersModalOpen(true);
   };
 
+  const tabs = [
+    { id: 'posts', label: 'Posts', icon: FileText, count: userPosts.filter(p => p.type === 'post').length },
+    { id: 'notes', label: 'Notes', icon: StickyNote, count: userPosts.filter(p => p.type === 'note').length },
+    { id: 'videos', label: 'Videos', icon: Video, count: userPosts.filter(p => p.type === 'video').length },
+  ];
+
   const getContent = () => {
-    switch (activeTab) {
-      case 'notes':
-        return userContent.notes;
-      case 'videos':
-        return userContent.videos;
-      default:
-        return userContent.posts;
-    }
+    const typeMap: Record<string, string> = {
+      posts: 'post',
+      notes: 'note',
+      videos: 'video',
+    };
+    return userPosts.filter(p => p.type === typeMap[activeTab]);
   };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return formatDate(dateString);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!profileData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-muted-foreground">Profile not found</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -153,11 +253,10 @@ const Profile = () => {
               >
                 <div className="relative">
                   <img
-                    src={userData.avatar}
-                    alt={userData.displayName}
-                    className="w-28 h-28 md:w-36 md:h-36 rounded-full border-4 border-primary/20"
+                    src={profileData.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profileData.user_id}`}
+                    alt={profileData.display_name}
+                    className="w-28 h-28 md:w-36 md:h-36 rounded-full border-4 border-border object-cover"
                   />
-                  <div className="absolute bottom-1 right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-card" />
                 </div>
               </motion.div>
 
@@ -165,52 +264,60 @@ const Profile = () => {
               <div className="flex-1">
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                   <div>
-                    <h1 className="text-2xl md:text-3xl font-bold mb-1">{userData.displayName}</h1>
-                    <p className="text-muted-foreground font-mono text-sm">@{userData.username}</p>
+                    <h1 className="text-2xl md:text-3xl font-bold mb-1">{profileData.display_name}</h1>
+                    <p className="text-muted-foreground font-mono text-sm">@{profileData.username}</p>
                   </div>
 
                   {/* Actions */}
                   <div className="flex gap-3">
-                    {userData.isOwnProfile ? (
-                      <Button variant="outline" size="sm" className="gap-2">
+                    {isOwnProfile ? (
+                      <Button variant="outline" size="sm" className="gap-2" onClick={() => setEditSheetOpen(true)}>
                         <Edit3 className="w-4 h-4" />
                         Edit Profile
                       </Button>
-                    ) : (
+                    ) : user ? (
                       <Button
                         variant={isFollowing ? 'outline' : 'default'}
                         size="sm"
                         className="gap-2"
-                        onClick={() => setIsFollowing(!isFollowing)}
+                        onClick={handleFollow}
                       >
                         <UserPlus className="w-4 h-4" />
                         {isFollowing ? 'Following' : 'Follow'}
                       </Button>
-                    )}
+                    ) : null}
                   </div>
                 </div>
 
                 {/* Bio */}
-                <p className="mt-4 text-foreground/90 leading-relaxed">{userData.bio}</p>
+                {profileData.bio ? (
+                  <p className="mt-4 text-foreground/90 leading-relaxed">{profileData.bio}</p>
+                ) : isOwnProfile ? (
+                  <p className="mt-4 text-muted-foreground italic">Add a bio to tell people about yourself</p>
+                ) : null}
 
                 {/* Meta */}
                 <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4" />
-                    {userData.location}
-                  </span>
-                  <a
-                    href={`https://${userData.website}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-primary hover:underline"
-                  >
-                    <LinkIcon className="w-4 h-4" />
-                    {userData.website}
-                  </a>
+                  {profileData.location && (
+                    <span className="flex items-center gap-1.5">
+                      <MapPin className="w-4 h-4" />
+                      {profileData.location}
+                    </span>
+                  )}
+                  {profileData.website && (
+                    <a
+                      href={profileData.website.startsWith('http') ? profileData.website : `https://${profileData.website}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-primary hover:underline"
+                    >
+                      <LinkIcon className="w-4 h-4" />
+                      {profileData.website}
+                    </a>
+                  )}
                   <span className="flex items-center gap-1.5">
                     <Calendar className="w-4 h-4" />
-                    Joined {userData.joinDate}
+                    Joined {formatDate(profileData.created_at)}
                   </span>
                 </div>
 
@@ -221,14 +328,14 @@ const Profile = () => {
                     className="group flex items-center gap-2 hover:text-primary transition-colors"
                   >
                     <Users className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
-                    <span className="font-semibold">{userData.followers.toLocaleString()}</span>
+                    <span className="font-semibold">{followersCount.toLocaleString()}</span>
                     <span className="text-muted-foreground text-sm">followers</span>
                   </button>
                   <button 
                     onClick={() => openFollowersModal('following')}
                     className="group flex items-center gap-2 hover:text-primary transition-colors"
                   >
-                    <span className="font-semibold">{userData.following.toLocaleString()}</span>
+                    <span className="font-semibold">{followingCount.toLocaleString()}</span>
                     <span className="text-muted-foreground text-sm">following</span>
                   </button>
                 </div>
@@ -277,25 +384,53 @@ const Profile = () => {
             transition={{ duration: 0.4 }}
             className="grid gap-6 md:grid-cols-2"
           >
-            {getContent().map((item, index) => (
+          {getContent().map((item, index) => (
               <motion.div
-                key={item.title}
+                key={item.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: index * 0.1 }}
               >
-                <ContentCard {...item} />
+                <ContentCard
+                  id={item.id}
+                  type={item.type as 'post' | 'note' | 'video'}
+                  title={item.title}
+                  author={profileData.display_name}
+                  authorAvatar={profileData.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profileData.user_id}`}
+                  content={item.content}
+                  likes={item.likes_count}
+                  comments={item.comments_count}
+                  timestamp={formatTimeAgo(item.created_at)}
+                  tags={item.tags || []}
+                  thumbnail={item.video_url || undefined}
+                />
               </motion.div>
             ))}
           </motion.div>
 
+          {/* Empty State */}
           {getContent().length === 0 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-center py-16 text-muted-foreground"
+              className="text-center py-16"
             >
-              <p>No {activeTab} yet</p>
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-secondary flex items-center justify-center">
+                {activeTab === 'posts' && <FileText className="w-8 h-8 text-muted-foreground" />}
+                {activeTab === 'notes' && <StickyNote className="w-8 h-8 text-muted-foreground" />}
+                {activeTab === 'videos' && <Video className="w-8 h-8 text-muted-foreground" />}
+              </div>
+              <p className="text-muted-foreground mb-4">
+                {isOwnProfile ? `You haven't created any ${activeTab} yet` : `No ${activeTab} yet`}
+              </p>
+              {isOwnProfile && (
+                <Button asChild variant="outline">
+                  <Link to="/create">
+                    <PenSquare className="w-4 h-4 mr-2" />
+                    Create your first {activeTab.slice(0, -1)}
+                  </Link>
+                </Button>
+              )}
             </motion.div>
           )}
         </div>
@@ -306,7 +441,14 @@ const Profile = () => {
         isOpen={followersModalOpen}
         onClose={() => setFollowersModalOpen(false)}
         type={followersModalType}
-        username={userData.username}
+        username={profileData.username}
+      />
+
+      {/* Profile Edit Sheet */}
+      <ProfileEditSheet
+        isOpen={editSheetOpen}
+        onClose={() => setEditSheetOpen(false)}
+        profile={profileData}
       />
     </div>
   );
