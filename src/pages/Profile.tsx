@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Link as LinkIcon, Calendar, Users, UserPlus, Edit3, FileText, StickyNote, Video, PenSquare } from 'lucide-react';
+import { ArrowLeft, MapPin, Link as LinkIcon, Calendar, Users, UserPlus, Edit3, FileText, StickyNote, Video, PenSquare, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ParticleBackground from '@/components/ParticleBackground';
 import ContentCard from '@/components/ContentCard';
@@ -9,6 +9,7 @@ import FollowersModal from '@/components/FollowersModal';
 import ProfileEditSheet from '@/components/ProfileEditSheet';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useMessages } from '@/hooks/useMessages';
 
 interface ProfileData {
   id: string;
@@ -38,6 +39,7 @@ const Profile = () => {
   const { username } = useParams();
   const navigate = useNavigate();
   const { user, profile: currentUserProfile } = useAuth();
+  const { getOrCreateConversation } = useMessages();
   
   const [activeTab, setActiveTab] = useState('posts');
   const [isFollowing, setIsFollowing] = useState(false);
@@ -276,15 +278,31 @@ const Profile = () => {
                         Edit Profile
                       </Button>
                     ) : user ? (
-                      <Button
-                        variant={isFollowing ? 'outline' : 'default'}
-                        size="sm"
-                        className="gap-2"
-                        onClick={handleFollow}
-                      >
-                        <UserPlus className="w-4 h-4" />
-                        {isFollowing ? 'Following' : 'Follow'}
-                      </Button>
+                      <>
+                        <Button
+                          variant={isFollowing ? 'outline' : 'default'}
+                          size="sm"
+                          className="gap-2"
+                          onClick={handleFollow}
+                        >
+                          <UserPlus className="w-4 h-4" />
+                          {isFollowing ? 'Following' : 'Follow'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-2"
+                          onClick={async () => {
+                            const conversationId = await getOrCreateConversation(profileData.user_id);
+                            if (conversationId) {
+                              navigate(`/messages?conversation=${conversationId}`);
+                            }
+                          }}
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          Message
+                        </Button>
+                      </>
                     ) : null}
                   </div>
                 </div>
