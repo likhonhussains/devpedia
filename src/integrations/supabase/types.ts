@@ -111,6 +111,7 @@ export type Database = {
       }
       posts: {
         Row: {
+          category: string | null
           comments_count: number
           content: string
           created_at: string
@@ -124,6 +125,7 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          category?: string | null
           comments_count?: number
           content: string
           created_at?: string
@@ -137,6 +139,7 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          category?: string | null
           comments_count?: number
           content?: string
           created_at?: string

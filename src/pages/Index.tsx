@@ -4,11 +4,13 @@ import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
 import ContentTabs from '@/components/ContentTabs';
 import ContentFeed from '@/components/ContentFeed';
+import CategoryFilter from '@/components/CategoryFilter';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('posts');
   const [showFeed, setShowFeed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState('all');
 
   return (
     <div className="min-h-screen relative flex flex-col">
@@ -71,7 +73,17 @@ const Index = () => {
               transition={{ duration: 0.5 }}
             >
               <ContentTabs activeTab={activeTab} onTabChange={setActiveTab} />
-              <ContentFeed activeTab={activeTab} searchQuery={searchQuery} />
+              
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.1 }}
+                className="mt-4"
+              >
+                <CategoryFilter activeCategory={activeCategory} onCategoryChange={setActiveCategory} />
+              </motion.div>
+              
+              <ContentFeed activeTab={activeTab} searchQuery={searchQuery} category={activeCategory} />
               
               <div className="text-center mt-8">
                 <button

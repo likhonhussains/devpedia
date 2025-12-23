@@ -28,6 +28,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import ParticleBackground from '@/components/ParticleBackground';
 import Header from '@/components/Header';
+import { categoryOptions } from '@/components/CategoryFilter';
 
 const contentTypes = [
   { id: 'post', label: 'Post', icon: FileText, description: 'Long-form article with full markdown support' },
@@ -52,6 +53,7 @@ const CreatePost = () => {
   const [customTag, setCustomTag] = useState('');
   const [isPreview, setIsPreview] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('general');
 
   // Redirect if not logged in
   useEffect(() => {
@@ -193,6 +195,7 @@ const CreatePost = () => {
         content: content.trim(),
         video_url: contentType === 'video' ? videoUrl.trim() : null,
         tags: selectedTags,
+        category: selectedCategory,
       });
 
       if (error) throw error;
@@ -283,6 +286,36 @@ const CreatePost = () => {
                 </button>
               );
             })}
+          </motion.div>
+
+          {/* Category Selection */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.15 }}
+            className="glass-card rounded-xl p-6 mb-6"
+          >
+            <h3 className="font-semibold mb-4">Category</h3>
+            <div className="flex flex-wrap gap-2">
+              {categoryOptions.map((cat) => {
+                const Icon = cat.icon;
+                const isSelected = selectedCategory === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+                      isSelected
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground'
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{cat.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </motion.div>
 
           {/* Editor */}

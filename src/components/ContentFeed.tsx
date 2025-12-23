@@ -12,9 +12,10 @@ import { formatDistanceToNow } from 'date-fns';
 interface ContentFeedProps {
   activeTab: string;
   searchQuery?: string;
+  category?: string;
 }
 
-const ContentFeed = ({ activeTab, searchQuery = '' }: ContentFeedProps) => {
+const ContentFeed = ({ activeTab, searchQuery = '', category = 'all' }: ContentFeedProps) => {
   const queryClient = useQueryClient();
   const postType = activeTab === 'notes' ? 'note' : activeTab === 'videos' ? 'video' : 'post';
 
@@ -41,13 +42,19 @@ const ContentFeed = ({ activeTab, searchQuery = '' }: ContentFeedProps) => {
   }, [queryClient]);
 
   const { data: posts, isLoading } = useQuery({
-    queryKey: ['posts', postType],
+    queryKey: ['posts', postType, category],
     queryFn: async () => {
-      const { data: postsData, error: postsError } = await supabase
+      let query = supabase
         .from('posts')
         .select('*')
         .eq('type', postType)
         .order('created_at', { ascending: false });
+
+      if (category && category !== 'all') {
+        query = query.eq('category', category);
+      }
+
+      const { data: postsData, error: postsError } = await query;
 
       if (postsError) throw postsError;
       if (!postsData?.length) return [];
