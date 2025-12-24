@@ -37,7 +37,6 @@ const ContentCard = ({
   const { isLiked, isLoading, toggleLike } = useLikePost(id);
   const { trackRead } = useReadingHistory();
   const username = author.toLowerCase().replace(/\s+/g, '');
-  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
   const handleClick = () => {
     trackRead(id);
@@ -94,7 +93,7 @@ const ContentCard = ({
       </div>
 
       {/* Content */}
-      <Link to={`/article/${slug}`} className="block group/title" onClick={handleClick}>
+      <Link to={`/article/${id}`} className="block group/title" onClick={handleClick}>
         <h3 className="font-semibold text-base mb-2 line-clamp-2 group-hover/title:text-primary transition-colors">
           {title}
         </h3>
@@ -140,7 +139,7 @@ const ContentCard = ({
         
         <div className="flex-1" />
         
-        <ShareDropdown title={title} url={`${window.location.origin}/article/${slug}`} />
+        <ShareDropdown title={title} url={`${window.location.origin}/article/${id}`} />
         <button className="p-2 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
           <Bookmark className="w-3.5 h-3.5" />
         </button>
