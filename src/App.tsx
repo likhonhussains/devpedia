@@ -16,6 +16,7 @@ import Messages from "./pages/Messages";
 import UserSearch from "./pages/UserSearch";
 import Leaderboard from "./pages/Leaderboard";
 import Drafts from "./pages/Drafts";
+import Achievements from "./pages/Achievements";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
                 <Route path="/article/:slug" element={<Article />} />
                 <Route path="/create" element={<CreatePost />} />
                 <Route path="/drafts" element={<Drafts />} />
+                <Route path="/achievements" element={<Achievements />} />
                 <Route path="/history" element={<ReadingHistory />} />
                 <Route path="/messages" element={<Messages />} />
                 <Route path="/users" element={<UserSearch />} />
