@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useMessages } from '@/hooks/useMessages';
+import NotificationBell from '@/components/NotificationBell';
 
 const Header = () => {
   const { user, profile, signOut } = useAuth();
@@ -37,6 +38,7 @@ const Header = () => {
             <ThemeToggle />
             {user ? (
               <>
+                <NotificationBell />
                 <Button
                   variant="ghost"
                   size="sm"
