@@ -13,6 +13,7 @@ import Auth from "./pages/Auth";
 import ReadingHistory from "./pages/ReadingHistory";
 import Messages from "./pages/Messages";
 import UserSearch from "./pages/UserSearch";
+import Leaderboard from "./pages/Leaderboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
               <Route path="/history" element={<ReadingHistory />} />
               <Route path="/messages" element={<Messages />} />
               <Route path="/users" element={<UserSearch />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
