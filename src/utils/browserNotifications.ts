@@ -65,9 +65,10 @@ export const showBrowserNotification = ({ title, body, icon, tag, onClick }: Not
 };
 
 export const formatNotificationContent = (
-  type: 'like' | 'comment' | 'follow' | 'message' | 'mention',
+  type: 'like' | 'comment' | 'follow' | 'message' | 'mention' | 'badge',
   actorName: string,
-  postTitle?: string
+  postTitle?: string,
+  badgeName?: string
 ): { title: string; body: string } => {
   switch (type) {
     case 'like':
@@ -94,6 +95,11 @@ export const formatNotificationContent = (
       return {
         title: 'You were mentioned',
         body: `${actorName} mentioned you${postTitle ? ` in "${postTitle.slice(0, 40)}..."` : ''}`,
+      };
+    case 'badge':
+      return {
+        title: '🏆 Achievement Unlocked!',
+        body: badgeName ? `You earned the "${badgeName}" badge!` : 'You earned a new badge!',
       };
     default:
       return {

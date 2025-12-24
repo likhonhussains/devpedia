@@ -13,7 +13,7 @@ import {
 export interface Notification {
   id: string;
   user_id: string;
-  type: 'like' | 'comment' | 'follow' | 'message' | 'mention';
+  type: 'like' | 'comment' | 'follow' | 'message' | 'mention' | 'badge';
   actor_id: string;
   post_id: string | null;
   comment_id: string | null;
@@ -27,6 +27,11 @@ export interface Notification {
   };
   post?: {
     title: string;
+  };
+  latestBadge?: {
+    name: string;
+    description: string;
+    icon: string;
   };
 }
 
@@ -63,11 +68,39 @@ export const useNotifications = () => {
         .select('id, title')
         .in('id', postIds);
 
-      // Map notifications with actor and post info
+      // For badge notifications, fetch the latest badge for each user
+      const badgeNotifications = data.filter(n => n.type === 'badge');
+      let latestBadges: Record<string, any> = {};
+      
+      if (badgeNotifications.length > 0) {
+        for (const bn of badgeNotifications) {
+          const { data: userBadge } = await supabase
+            .from('user_badges')
+            .select(`
+              earned_at,
+              badges (
+                name,
+                description,
+                icon
+              )
+            `)
+            .eq('user_id', bn.user_id)
+            .order('earned_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          
+          if (userBadge) {
+            latestBadges[bn.id] = userBadge.badges;
+          }
+        }
+      }
+
+      // Map notifications with actor, post, and badge info
       return data.map(notification => ({
         ...notification,
         actor: profiles?.find(p => p.user_id === notification.actor_id),
         post: posts?.find(p => p.id === notification.post_id),
+        latestBadge: latestBadges[notification.id],
       })) as Notification[];
     },
     enabled: !!user,
