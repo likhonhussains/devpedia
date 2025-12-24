@@ -1,9 +1,9 @@
 import { motion } from 'framer-motion';
-import { Globe, Users } from 'lucide-react';
+import { Globe, Users, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type FeedMode = 'all' | 'following';
+export type FeedMode = 'all' | 'following' | 'recommended';
 
 interface FeedToggleProps {
   activeMode: FeedMode;
@@ -17,7 +17,8 @@ const FeedToggle = ({ activeMode, onModeChange }: FeedToggleProps) => {
   if (!user) return null;
 
   const modes = [
-    { id: 'all' as FeedMode, label: 'For You', icon: Globe },
+    { id: 'all' as FeedMode, label: 'All', icon: Globe },
+    { id: 'recommended' as FeedMode, label: 'For You', icon: Sparkles },
     { id: 'following' as FeedMode, label: 'Following', icon: Users },
   ];
 
