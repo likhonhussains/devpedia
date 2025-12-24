@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { PenLine, LogOut, User, History, MessageCircle, Users, Trophy } from 'lucide-react';
+import { PenLine, LogOut, User, History, MessageCircle, Users, Trophy, FileEdit } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -79,6 +79,15 @@ const Header = () => {
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-2 text-muted-foreground hover:text-foreground"
+                  onClick={() => navigate('/drafts')}
+                >
+                  <FileEdit className="w-4 h-4" />
+                  <span className="hidden sm:inline">Drafts</span>
                 </Button>
                 <Button
                   variant="ghost"

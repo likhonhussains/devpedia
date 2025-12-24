@@ -299,6 +299,7 @@ export type Database = {
           created_at: string
           id: string
           likes_count: number
+          status: string
           tags: string[] | null
           title: string
           type: string
@@ -313,6 +314,7 @@ export type Database = {
           created_at?: string
           id?: string
           likes_count?: number
+          status?: string
           tags?: string[] | null
           title: string
           type: string
@@ -327,6 +329,7 @@ export type Database = {
           created_at?: string
           id?: string
           likes_count?: number
+          status?: string
           tags?: string[] | null
           title?: string
           type?: string
