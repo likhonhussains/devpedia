@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
 import { 
   ArrowLeft, 
   Eye, 
@@ -21,7 +22,9 @@ import {
   StickyNote,
   Video,
   Send,
-  Save
+  Save,
+  Upload,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -59,6 +62,8 @@ const CreatePost = () => {
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('general');
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(draftId);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load draft if editing
   useEffect(() => {
@@ -120,6 +125,81 @@ const CreatePost = () => {
     if (tag && !selectedTags.includes(tag) && selectedTags.length < 5) {
       setSelectedTags([...selectedTags, tag]);
       setCustomTag('');
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please select an image file.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select an image smaller than 5MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploadingImage(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      const imageUrl = urlData.publicUrl;
+
+      // Insert markdown image at cursor position
+      const textarea = document.getElementById('content-editor') as HTMLTextAreaElement;
+      if (textarea) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const imageMarkdown = `![Image](${imageUrl})`;
+        const newContent = content.substring(0, start) + imageMarkdown + content.substring(end);
+        setContent(newContent);
+      } else {
+        // Append to end if no cursor position
+        setContent(content + `\n\n![Image](${imageUrl})`);
+      }
+
+      toast({
+        title: "Image uploaded!",
+        description: "Your image has been added to the post.",
+      });
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: "Upload failed",
+        description: error.message || "Failed to upload image. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingImage(false);
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -454,6 +534,47 @@ const CreatePost = () => {
             </div>
           </motion.div>
 
+          {/* Image Upload Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.18 }}
+            className="glass-card rounded-xl p-6 mb-6"
+          >
+            <h3 className="font-semibold mb-4">Upload Image</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Upload an image from your device to include in your post
+            </p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+              id="image-upload"
+            />
+            <label
+              htmlFor="image-upload"
+              className={`flex items-center justify-center gap-3 p-6 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all ${
+                isUploadingImage ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              {isUploadingImage ? (
+                <>
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  <span className="text-sm text-muted-foreground">Uploading...</span>
+                </>
+              ) : (
+                <>
+                  <Upload className="w-6 h-6 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
+                    Click to upload image (max 5MB)
+                  </span>
+                </>
+              )}
+            </label>
+          </motion.div>
+
           {/* Editor */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -550,9 +671,9 @@ const CreatePost = () => {
                 <LinkIcon className="w-4 h-4" />
               </button>
               <button
-                onClick={() => insertMarkdown('image', 'alt text')}
+                onClick={() => fileInputRef.current?.click()}
                 className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
-                title="Image"
+                title="Upload Image"
               >
                 <Image className="w-4 h-4" />
               </button>
@@ -576,7 +697,7 @@ const CreatePost = () => {
               {isPreview ? (
                 <div className="p-6 prose prose-invert prose-lg max-w-none prose-headings:text-foreground prose-p:text-foreground/85 prose-a:text-primary prose-code:text-primary prose-code:bg-secondary prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-secondary prose-pre:border prose-pre:border-border prose-blockquote:border-primary prose-blockquote:text-muted-foreground">
                   {content ? (
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
                       {content}
                     </ReactMarkdown>
                   ) : (
