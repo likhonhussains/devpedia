@@ -7,6 +7,7 @@ import ParticleBackground from '@/components/ParticleBackground';
 import ContentCard from '@/components/ContentCard';
 import FollowersModal from '@/components/FollowersModal';
 import ProfileEditSheet from '@/components/ProfileEditSheet';
+import BadgeDisplay from '@/components/BadgeDisplay';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useMessages } from '@/hooks/useMessages';
@@ -337,6 +338,11 @@ const Profile = () => {
                     <Calendar className="w-4 h-4" />
                     Joined {formatDate(profileData.created_at)}
                   </span>
+                </div>
+
+                {/* Badges */}
+                <div className="mt-5">
+                  <BadgeDisplay userId={profileData.user_id} />
                 </div>
 
                 {/* Stats */}
