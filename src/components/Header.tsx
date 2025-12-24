@@ -45,20 +45,20 @@ const Header = () => {
       className="fixed top-0 left-0 right-0 z-50"
     >
       <div className="mx-4 sm:mx-6 lg:mx-8 mt-4">
-        <nav className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 rounded-xl bg-card/80 backdrop-blur-xl border border-border/50">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center p-0.5">
+        <nav className="max-w-6xl mx-auto flex items-center justify-between px-3 sm:px-4 lg:px-6 py-2 rounded-xl bg-card/80 backdrop-blur-xl border border-border/50">
+          <Link to="/" className="flex items-center gap-1.5 shrink-0">
+            <div className="w-6 h-6 rounded-md bg-white flex items-center justify-center p-0.5">
               <img src={logoIcon} alt="Basic Comet" className="w-full h-full object-contain" />
             </div>
-            <span className="font-semibold text-sm">Basic Comet</span>
+            <span className="font-semibold text-sm whitespace-nowrap">Basic Comet</span>
           </Link>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             <ThemeToggle />
             {user ? (
               <>
                 {/* Desktop Navigation */}
-                <div className="hidden md:flex items-center gap-1">
+                <div className="hidden md:flex items-center gap-0.5">
                   <NotificationBell />
                   {menuItems.map((item) => (
                     <Button

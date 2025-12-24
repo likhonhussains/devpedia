@@ -8,7 +8,8 @@ import {
   Brain, 
   Code, 
   Sparkles,
-  LayoutGrid
+  LayoutGrid,
+  Cloud
 } from 'lucide-react';
 
 const categories = [
@@ -17,6 +18,7 @@ const categories = [
   { id: 'engineering', label: 'Engineering', icon: Wrench },
   { id: 'data-science', label: 'Data Science', icon: BarChart3 },
   { id: 'cybersecurity', label: 'Cybersecurity', icon: Shield },
+  { id: 'cloud-computing', label: 'Cloud Computing', icon: Cloud },
   { id: 'design', label: 'Design', icon: Palette },
   { id: 'ai', label: 'AI', icon: Brain },
   { id: 'coding', label: 'Coding', icon: Code },
