@@ -1,7 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  showBrowserNotification,
+  formatNotificationContent,
+  requestNotificationPermission,
+  getNotificationPermission,
+  isBrowserNotificationSupported,
+} from '@/utils/browserNotifications';
 
 export interface Notification {
   id: string;
@@ -66,6 +73,46 @@ export const useNotifications = () => {
     enabled: !!user,
   });
 
+  // Helper to show browser notification for a new notification
+  const triggerBrowserNotification = useCallback(async (payload: any) => {
+    if (getNotificationPermission() !== 'granted') return;
+
+    // Fetch actor info
+    const { data: actor } = await supabase
+      .from('profiles')
+      .select('display_name, avatar_url')
+      .eq('user_id', payload.new.actor_id)
+      .single();
+
+    // Fetch post info if applicable
+    let postTitle: string | undefined;
+    if (payload.new.post_id) {
+      const { data: post } = await supabase
+        .from('posts')
+        .select('title')
+        .eq('id', payload.new.post_id)
+        .single();
+      postTitle = post?.title;
+    }
+
+    const actorName = actor?.display_name || 'Someone';
+    const { title, body } = formatNotificationContent(
+      payload.new.type,
+      actorName,
+      postTitle
+    );
+
+    showBrowserNotification({
+      title,
+      body,
+      icon: actor?.avatar_url || undefined,
+      tag: payload.new.id,
+      onClick: () => {
+        // Focus will happen automatically, notification bell will show new items
+      },
+    });
+  }, []);
+
   // Real-time subscription
   useEffect(() => {
     if (!user) return;
@@ -80,8 +127,10 @@ export const useNotifications = () => {
           table: 'notifications',
           filter: `user_id=eq.${user.id}`,
         },
-        () => {
+        (payload) => {
           queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
+          // Trigger browser notification
+          triggerBrowserNotification(payload);
         }
       )
       .subscribe();
@@ -89,7 +138,7 @@ export const useNotifications = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, queryClient]);
+  }, [user, queryClient, triggerBrowserNotification]);
 
   // Mark notification as read
   const markAsRead = useMutation({
@@ -141,6 +190,10 @@ export const useNotifications = () => {
 
   const unreadCount = notifications.filter(n => !n.read_at).length;
 
+  // Permission helpers
+  const notificationPermission = getNotificationPermission();
+  const canRequestPermission = isBrowserNotificationSupported() && notificationPermission === 'default';
+
   return {
     notifications,
     isLoading,
@@ -148,5 +201,9 @@ export const useNotifications = () => {
     markAsRead: markAsRead.mutate,
     markAllAsRead: markAllAsRead.mutate,
     deleteNotification: deleteNotification.mutate,
+    // Browser notification helpers
+    notificationPermission,
+    canRequestPermission,
+    requestPermission: requestNotificationPermission,
   };
 };
