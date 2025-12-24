@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
 import { useQuery } from '@tanstack/react-query';
 import { 
   ArrowLeft, 
@@ -23,6 +24,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useComments } from '@/hooks/useComments';
 import { useLikePost } from '@/hooks/useLikePost';
 import { formatDistanceToNow, format } from 'date-fns';
+import ShareDropdown from '@/components/ShareDropdown';
 
 const Article = () => {
   const { slug } = useParams();
@@ -232,7 +234,7 @@ const Article = () => {
               {/* Article Content */}
               <div className="p-6 md:p-8">
                 <div className="prose prose-invert prose-lg max-w-none prose-headings:text-foreground prose-p:text-foreground/85 prose-a:text-primary prose-strong:text-foreground prose-code:text-primary prose-code:bg-secondary prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-secondary prose-pre:border prose-pre:border-border prose-blockquote:border-primary prose-blockquote:text-muted-foreground prose-table:border-collapse prose-th:border prose-th:border-border prose-th:bg-secondary prose-th:p-2 prose-td:border prose-td:border-border prose-td:p-2">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
                     {post.content}
                   </ReactMarkdown>
                 </div>
@@ -260,9 +262,7 @@ const Article = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <button className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
-                      <Share2 className="w-5 h-5" />
-                    </button>
+                    <ShareDropdown title={post.title} url={window.location.href} />
                     <button
                       onClick={() => setIsBookmarked(!isBookmarked)}
                       className={`p-2 rounded-lg transition-colors ${
