@@ -343,10 +343,14 @@ export type Database = {
         Row: {
           avatar_url: string | null
           bio: string | null
+          cover_url: string | null
           created_at: string
           display_name: string
+          github: string | null
           id: string
+          linkedin: string | null
           location: string | null
+          twitter: string | null
           updated_at: string
           user_id: string
           username: string
@@ -355,10 +359,14 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           bio?: string | null
+          cover_url?: string | null
           created_at?: string
           display_name: string
+          github?: string | null
           id?: string
+          linkedin?: string | null
           location?: string | null
+          twitter?: string | null
           updated_at?: string
           user_id: string
           username: string
@@ -367,10 +375,14 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           bio?: string | null
+          cover_url?: string | null
           created_at?: string
           display_name?: string
+          github?: string | null
           id?: string
+          linkedin?: string | null
           location?: string | null
+          twitter?: string | null
           updated_at?: string
           user_id?: string
           username?: string
