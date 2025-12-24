@@ -43,8 +43,8 @@ const Header = () => {
       transition={{ duration: 0.4 }}
       className="fixed top-0 left-0 right-0 z-50"
     >
-      <div className="mx-4 mt-4">
-        <nav className="max-w-5xl mx-auto flex items-center justify-between px-5 py-3 rounded-xl bg-card/80 backdrop-blur-xl border border-border/50">
+      <div className="mx-6 mt-4">
+        <nav className="max-w-5xl mx-auto flex items-center justify-between px-6 py-3 rounded-xl bg-card/80 backdrop-blur-xl border border-border/50">
           <Link to="/" className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-sm">B</span>
