@@ -10,15 +10,17 @@ import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { FeedMode } from './FeedToggle';
+import { SortMode } from './SortToggle';
 
 interface ContentFeedProps {
   activeTab: string;
   searchQuery?: string;
   category?: string;
   feedMode?: FeedMode;
+  sortMode?: SortMode;
 }
 
-const ContentFeed = ({ activeTab, searchQuery = '', category = 'all', feedMode = 'all' }: ContentFeedProps) => {
+const ContentFeed = ({ activeTab, searchQuery = '', category = 'all', feedMode = 'all', sortMode = 'recent' }: ContentFeedProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const postType = activeTab === 'notes' ? 'note' : activeTab === 'videos' ? 'video' : 'post';
@@ -67,13 +69,19 @@ const ContentFeed = ({ activeTab, searchQuery = '', category = 'all', feedMode =
   });
 
   const { data: posts, isLoading } = useQuery({
-    queryKey: ['posts', postType, category, feedMode, followedUserIds],
+    queryKey: ['posts', postType, category, feedMode, followedUserIds, sortMode],
     queryFn: async () => {
       let query = supabase
         .from('posts')
         .select('*')
-        .eq('type', postType)
-        .order('created_at', { ascending: false });
+        .eq('type', postType);
+
+      // Apply sorting
+      if (sortMode === 'popular') {
+        query = query.order('likes_count', { ascending: false });
+      } else {
+        query = query.order('created_at', { ascending: false });
+      }
 
       if (category && category !== 'all') {
         query = query.eq('category', category);

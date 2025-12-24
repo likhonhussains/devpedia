@@ -6,6 +6,7 @@ import ContentTabs from '@/components/ContentTabs';
 import ContentFeed from '@/components/ContentFeed';
 import CategoryFilter from '@/components/CategoryFilter';
 import FeedToggle, { FeedMode } from '@/components/FeedToggle';
+import SortToggle, { SortMode } from '@/components/SortToggle';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('posts');
@@ -13,6 +14,7 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
   const [feedMode, setFeedMode] = useState<FeedMode>('all');
+  const [sortMode, setSortMode] = useState<SortMode>('recent');
 
   return (
     <div className="min-h-screen relative flex flex-col">
@@ -89,9 +91,10 @@ const Index = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.15 }}
-                className="mt-4"
+                className="mt-4 flex flex-wrap items-center justify-center gap-4"
               >
                 <FeedToggle activeMode={feedMode} onModeChange={setFeedMode} />
+                <SortToggle activeSort={sortMode} onSortChange={setSortMode} />
               </motion.div>
               
               <ContentFeed 
@@ -99,6 +102,7 @@ const Index = () => {
                 searchQuery={searchQuery} 
                 category={activeCategory}
                 feedMode={feedMode}
+                sortMode={sortMode}
               />
               
               <div className="text-center mt-8">
