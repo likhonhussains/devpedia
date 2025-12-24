@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useQuery } from '@tanstack/react-query';
 import { 
   ArrowLeft, 
   Heart, 
@@ -11,183 +12,137 @@ import {
   Bookmark, 
   Calendar,
   Clock,
-  Send
+  Send,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ParticleBackground from '@/components/ParticleBackground';
 import Header from '@/components/Header';
-
-// Mock article data
-const articleData = {
-  id: '1',
-  slug: 'understanding-react-server-components',
-  title: 'Understanding React Server Components: A Deep Dive',
-  author: {
-    name: 'Sarah Chen',
-    username: 'sarahchen',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
-    bio: 'Senior Frontend Engineer @TechCorp',
-  },
-  publishedAt: 'December 20, 2024',
-  readTime: '8 min read',
-  likes: 234,
-  comments: 45,
-  tags: ['react', 'nextjs', 'webdev', 'javascript'],
-  content: `
-React Server Components represent a fundamental shift in how we think about React applications. In this article, we'll explore what they are, why they matter, and how to use them effectively.
-
-## What are React Server Components?
-
-React Server Components (RSC) allow you to render components on the server, reducing the amount of JavaScript sent to the client. This leads to:
-
-- **Faster initial page loads** - Less JavaScript to download and parse
-- **Better SEO** - Content is rendered on the server
-- **Direct backend access** - Query databases directly from components
-
-## The Mental Model
-
-Think of your React application as having two types of components:
-
-\`\`\`tsx
-// Server Component (default in Next.js 13+)
-async function ArticleList() {
-  const articles = await db.query('SELECT * FROM articles');
-  return (
-    <ul>
-      {articles.map(article => (
-        <ArticleCard key={article.id} article={article} />
-      ))}
-    </ul>
-  );
-}
-
-// Client Component
-'use client';
-function LikeButton({ articleId }) {
-  const [liked, setLiked] = useState(false);
-  return (
-    <button onClick={() => setLiked(!liked)}>
-      {liked ? '❤️' : '🤍'}
-    </button>
-  );
-}
-\`\`\`
-
-## When to Use Server vs Client Components
-
-| Use Server Components for: | Use Client Components for: |
-|---------------------------|---------------------------|
-| Fetching data | Adding interactivity |
-| Accessing backend resources | Using browser APIs |
-| Keeping sensitive info on server | Managing state |
-| Reducing client bundle size | Using effects |
-
-## Best Practices
-
-1. **Start with Server Components** - They should be your default choice
-2. **Push client boundaries down** - Keep client components as leaf nodes
-3. **Avoid prop drilling** - Use composition patterns instead
-
-> "The best code is no code at all. Server Components let us write less JavaScript while doing more." - Dan Abramov
-
-## Conclusion
-
-React Server Components are not just a performance optimization—they're a new way of thinking about React architecture. By understanding when to use server vs client components, you can build faster, more efficient applications.
-
----
-
-*Thanks for reading! Follow me for more React content.*
-  `,
-};
-
-const commentsData = [
-  {
-    id: '1',
-    author: {
-      name: 'Alex Rivera',
-      username: 'alexrivera',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
-    },
-    content: 'Great explanation! The mental model section really helped me understand the difference between server and client components.',
-    timestamp: '2 hours ago',
-    likes: 12,
-  },
-  {
-    id: '2',
-    author: {
-      name: 'Emma Wilson',
-      username: 'emmawilson',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emma',
-    },
-    content: 'The table comparing when to use each type is super helpful. Bookmarking this for future reference!',
-    timestamp: '4 hours ago',
-    likes: 8,
-  },
-  {
-    id: '3',
-    author: {
-      name: 'Marcus Johnson',
-      username: 'marcusjohnson',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Marcus',
-    },
-    content: 'Would love to see a follow-up article about streaming and Suspense with RSC. This was really well written!',
-    timestamp: '6 hours ago',
-    likes: 15,
-  },
-];
-
-const relatedPosts = [
-  {
-    id: '2',
-    slug: 'state-management-2024',
-    title: 'State Management in 2024: What Actually Works',
-    author: 'Sarah Chen',
-    authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
-    readTime: '6 min read',
-  },
-  {
-    id: '3',
-    slug: 'typescript-patterns',
-    title: 'TypeScript Patterns Every React Dev Should Know',
-    author: 'Emma Wilson',
-    authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emma',
-    readTime: '10 min read',
-  },
-  {
-    id: '4',
-    slug: 'nextjs-app-router',
-    title: 'Migrating to Next.js App Router: A Complete Guide',
-    author: 'Alex Rivera',
-    authorAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
-    readTime: '12 min read',
-  },
-];
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useComments } from '@/hooks/useComments';
+import { useLikePost } from '@/hooks/useLikePost';
+import { formatDistanceToNow, format } from 'date-fns';
 
 const Article = () => {
   const { slug } = useParams();
-  const [isLiked, setIsLiked] = useState(false);
+  const { user, profile } = useAuth();
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [newComment, setNewComment] = useState('');
-  const [comments, setComments] = useState(commentsData);
+
+  // Fetch post data from database
+  const { data: post, isLoading: postLoading, error: postError } = useQuery({
+    queryKey: ['post', slug],
+    queryFn: async () => {
+      // First get the post
+      const { data: postData, error: postError } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('id', slug)
+        .maybeSingle();
+
+      if (postError) throw postError;
+      if (!postData) return null;
+
+      // Then get the author profile
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('display_name, username, avatar_url, bio')
+        .eq('user_id', postData.user_id)
+        .maybeSingle();
+
+      return {
+        ...postData,
+        authorProfile: profileData
+      };
+    },
+    enabled: !!slug,
+  });
+
+  // Fetch related posts
+  const { data: relatedPosts } = useQuery({
+    queryKey: ['relatedPosts', post?.category, slug],
+    queryFn: async () => {
+      const { data: postsData, error: postsError } = await supabase
+        .from('posts')
+        .select('id, title, created_at, user_id')
+        .eq('status', 'published')
+        .neq('id', slug)
+        .limit(3);
+
+      if (postsError) throw postsError;
+      if (!postsData) return [];
+
+      // Get profiles for each post
+      const userIds = [...new Set(postsData.map(p => p.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, avatar_url')
+        .in('user_id', userIds);
+
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+
+      return postsData.map(p => ({
+        ...p,
+        authorProfile: profileMap.get(p.user_id) || null
+      }));
+    },
+    enabled: !!post,
+  });
+
+  // Use comments hook
+  const { comments, isLoading: commentsLoading, addComment, isAddingComment } = useComments(slug || '');
+
+  // Use like hook
+  const { isLiked, toggleLike } = useLikePost(slug || '');
 
   const handleAddComment = () => {
-    if (!newComment.trim()) return;
-    
-    const comment = {
-      id: Date.now().toString(),
-      author: {
-        name: 'You',
-        username: 'currentuser',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=CurrentUser',
-      },
-      content: newComment,
-      timestamp: 'Just now',
-      likes: 0,
-    };
-    
-    setComments([comment, ...comments]);
+    if (!newComment.trim() || !user) return;
+    addComment(newComment);
     setNewComment('');
   };
+
+  // Calculate read time (rough estimate: 200 words per minute)
+  const calculateReadTime = (content: string) => {
+    const words = content.split(/\s+/).length;
+    const minutes = Math.ceil(words / 200);
+    return `${minutes} min read`;
+  };
+
+  if (postLoading) {
+    return (
+      <div className="min-h-screen relative overflow-hidden">
+        <ParticleBackground />
+        <Header />
+        <main className="relative z-10 pt-24 pb-20 px-6 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </main>
+      </div>
+    );
+  }
+
+  if (postError || !post) {
+    return (
+      <div className="min-h-screen relative overflow-hidden">
+        <ParticleBackground />
+        <Header />
+        <main className="relative z-10 pt-24 pb-20 px-6">
+          <div className="max-w-6xl mx-auto text-center">
+            <h1 className="text-2xl font-bold mb-4">Post not found</h1>
+            <p className="text-muted-foreground mb-6">The post you're looking for doesn't exist or has been removed.</p>
+            <Link to="/">
+              <Button>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to feed
+              </Button>
+            </Link>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  const authorProfile = post.authorProfile;
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -222,39 +177,41 @@ const Article = () => {
               {/* Article Header */}
               <div className="p-6 md:p-8 border-b border-border">
                 {/* Tags */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {articleData.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-3 py-1 text-xs rounded-full bg-primary/10 text-primary font-mono"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
+                {post.tags && post.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {post.tags.map((tag: string) => (
+                      <span
+                        key={tag}
+                        className="px-3 py-1 text-xs rounded-full bg-primary/10 text-primary font-mono"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
 
                 {/* Title */}
                 <h1 className="text-2xl md:text-4xl font-bold leading-tight mb-6">
-                  {articleData.title}
+                  {post.title}
                 </h1>
 
                 {/* Author & Meta */}
                 <div className="flex flex-wrap items-center gap-4">
                   <Link
-                    to={`/profile/${articleData.author.username}`}
+                    to={`/profile/${authorProfile?.username || 'unknown'}`}
                     className="flex items-center gap-3 group"
                   >
                     <img
-                      src={articleData.author.avatar}
-                      alt={articleData.author.name}
+                      src={authorProfile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.user_id}`}
+                      alt={authorProfile?.display_name || 'Author'}
                       className="w-12 h-12 rounded-full border-2 border-border group-hover:border-primary transition-colors"
                     />
                     <div>
                       <p className="font-medium group-hover:text-primary transition-colors">
-                        {articleData.author.name}
+                        {authorProfile?.display_name || 'Unknown Author'}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {articleData.author.bio}
+                        {authorProfile?.bio || ''}
                       </p>
                     </div>
                   </Link>
@@ -262,11 +219,11 @@ const Article = () => {
                   <div className="flex items-center gap-4 text-sm text-muted-foreground ml-auto">
                     <span className="flex items-center gap-1.5">
                       <Calendar className="w-4 h-4" />
-                      {articleData.publishedAt}
+                      {format(new Date(post.created_at), 'MMMM d, yyyy')}
                     </span>
                     <span className="flex items-center gap-1.5">
                       <Clock className="w-4 h-4" />
-                      {articleData.readTime}
+                      {calculateReadTime(post.content)}
                     </span>
                   </div>
                 </div>
@@ -276,7 +233,7 @@ const Article = () => {
               <div className="p-6 md:p-8">
                 <div className="prose prose-invert prose-lg max-w-none prose-headings:text-foreground prose-p:text-foreground/85 prose-a:text-primary prose-strong:text-foreground prose-code:text-primary prose-code:bg-secondary prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-secondary prose-pre:border prose-pre:border-border prose-blockquote:border-primary prose-blockquote:text-muted-foreground prose-table:border-collapse prose-th:border prose-th:border-border prose-th:bg-secondary prose-th:p-2 prose-td:border prose-td:border-border prose-td:p-2">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {articleData.content}
+                    {post.content}
                   </ReactMarkdown>
                 </div>
               </div>
@@ -286,7 +243,7 @@ const Article = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <button
-                      onClick={() => setIsLiked(!isLiked)}
+                      onClick={toggleLike}
                       className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
                         isLiked
                           ? 'bg-red-500/10 text-red-500'
@@ -294,11 +251,11 @@ const Article = () => {
                       }`}
                     >
                       <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-                      <span className="font-medium">{articleData.likes + (isLiked ? 1 : 0)}</span>
+                      <span className="font-medium">{post.likes_count + (isLiked ? 0 : 0)}</span>
                     </button>
                     <button className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
                       <MessageCircle className="w-5 h-5" />
-                      <span className="font-medium">{comments.length}</span>
+                      <span className="font-medium">{comments?.length || 0}</span>
                     </button>
                   </div>
 
@@ -323,73 +280,94 @@ const Article = () => {
               {/* Comments Section */}
               <div className="p-6 md:p-8 border-t border-border">
                 <h2 className="text-xl font-semibold mb-6">
-                  Comments ({comments.length})
+                  Comments ({comments?.length || 0})
                 </h2>
 
                 {/* Add Comment */}
-                <div className="flex gap-3 mb-8">
-                  <img
-                    src="https://api.dicebear.com/7.x/avataaars/svg?seed=CurrentUser"
-                    alt="Your avatar"
-                    className="w-10 h-10 rounded-full border-2 border-border flex-shrink-0"
-                  />
-                  <div className="flex-1 relative">
-                    <textarea
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="Add a comment..."
-                      rows={3}
-                      className="w-full bg-secondary rounded-xl p-4 pr-12 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+                {user ? (
+                  <div className="flex gap-3 mb-8">
+                    <img
+                      src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
+                      alt="Your avatar"
+                      className="w-10 h-10 rounded-full border-2 border-border flex-shrink-0"
                     />
-                    <button
-                      onClick={handleAddComment}
-                      disabled={!newComment.trim()}
-                      className="absolute right-3 bottom-3 p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <Send className="w-4 h-4" />
-                    </button>
+                    <div className="flex-1 relative">
+                      <textarea
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        placeholder="Add a comment..."
+                        rows={3}
+                        className="w-full bg-secondary rounded-xl p-4 pr-12 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+                      />
+                      <button
+                        onClick={handleAddComment}
+                        disabled={!newComment.trim() || isAddingComment}
+                        className="absolute right-3 bottom-3 p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {isAddingComment ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Send className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="mb-8 p-4 bg-secondary rounded-xl text-center">
+                    <p className="text-muted-foreground mb-2">Sign in to leave a comment</p>
+                    <Link to="/auth">
+                      <Button size="sm">Sign In</Button>
+                    </Link>
+                  </div>
+                )}
 
                 {/* Comments List */}
                 <div className="space-y-6">
-                  {comments.map((comment, index) => (
-                    <motion.div
-                      key={comment.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="flex gap-3"
-                    >
-                      <Link to={`/profile/${comment.author.username}`} className="flex-shrink-0">
-                        <img
-                          src={comment.author.avatar}
-                          alt={comment.author.name}
-                          className="w-10 h-10 rounded-full border-2 border-border hover:border-primary transition-colors"
-                        />
-                      </Link>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Link
-                            to={`/profile/${comment.author.username}`}
-                            className="font-medium text-sm hover:text-primary transition-colors"
-                          >
-                            {comment.author.name}
-                          </Link>
-                          <span className="text-xs text-muted-foreground">
-                            {comment.timestamp}
-                          </span>
+                  {commentsLoading ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : comments && comments.length > 0 ? (
+                    comments.map((comment: any, index: number) => (
+                      <motion.div
+                        key={comment.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="flex gap-3"
+                      >
+                        <Link to={`/profile/${comment.profiles?.username || 'unknown'}`} className="flex-shrink-0">
+                          <img
+                            src={comment.profiles?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.user_id}`}
+                            alt={comment.profiles?.display_name || 'User'}
+                            className="w-10 h-10 rounded-full border-2 border-border hover:border-primary transition-colors"
+                          />
+                        </Link>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Link
+                              to={`/profile/${comment.profiles?.username || 'unknown'}`}
+                              className="font-medium text-sm hover:text-primary transition-colors"
+                            >
+                              {comment.profiles?.display_name || 'Unknown User'}
+                            </Link>
+                            <span className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                            </span>
+                          </div>
+                          <p className="text-sm text-foreground/85 leading-relaxed">
+                            {comment.content}
+                          </p>
+                          <button className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground hover:text-primary transition-colors">
+                            <Heart className="w-3.5 h-3.5" />
+                            <span>{comment.likes_count || 0}</span>
+                          </button>
                         </div>
-                        <p className="text-sm text-foreground/85 leading-relaxed">
-                          {comment.content}
-                        </p>
-                        <button className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground hover:text-primary transition-colors">
-                          <Heart className="w-3.5 h-3.5" />
-                          <span>{comment.likes}</span>
-                        </button>
-                      </div>
-                    </motion.div>
-                  ))}
+                      </motion.div>
+                    ))
+                  ) : (
+                    <p className="text-center text-muted-foreground py-8">No comments yet. Be the first to comment!</p>
+                  )}
                 </div>
               </div>
             </motion.article>
@@ -404,25 +382,25 @@ const Article = () => {
               {/* Author Card */}
               <div className="glass-card rounded-xl p-5">
                 <Link
-                  to={`/profile/${articleData.author.username}`}
+                  to={`/profile/${authorProfile?.username || 'unknown'}`}
                   className="flex items-center gap-3 mb-4 group"
                 >
                   <img
-                    src={articleData.author.avatar}
-                    alt={articleData.author.name}
+                    src={authorProfile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.user_id}`}
+                    alt={authorProfile?.display_name || 'Author'}
                     className="w-14 h-14 rounded-full border-2 border-border group-hover:border-primary transition-colors"
                   />
                   <div>
                     <p className="font-semibold group-hover:text-primary transition-colors">
-                      {articleData.author.name}
+                      {authorProfile?.display_name || 'Unknown Author'}
                     </p>
                     <p className="text-sm text-muted-foreground font-mono">
-                      @{articleData.author.username}
+                      @{authorProfile?.username || 'unknown'}
                     </p>
                   </div>
                 </Link>
                 <p className="text-sm text-muted-foreground mb-4">
-                  {articleData.author.bio}
+                  {authorProfile?.bio || 'No bio available'}
                 </p>
                 <Button className="w-full" size="sm">
                   Follow
@@ -430,49 +408,58 @@ const Article = () => {
               </div>
 
               {/* Related Posts */}
-              <div className="glass-card rounded-xl p-5">
-                <h3 className="font-semibold mb-4">Related Posts</h3>
-                <div className="space-y-4">
-                  {relatedPosts.map((post) => (
-                    <Link
-                      key={post.id}
-                      to={`/article/${post.slug}`}
-                      className="block group"
-                    >
-                      <div className="flex items-start gap-3">
-                        <img
-                          src={post.authorAvatar}
-                          alt={post.author}
-                          className="w-8 h-8 rounded-full border border-border flex-shrink-0"
-                        />
-                        <div>
-                          <h4 className="text-sm font-medium leading-snug group-hover:text-primary transition-colors line-clamp-2">
-                            {post.title}
-                          </h4>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {post.author} · {post.readTime}
-                          </p>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
+              {relatedPosts && relatedPosts.length > 0 && (
+                <div className="glass-card rounded-xl p-5">
+                  <h3 className="font-semibold mb-4">Related Posts</h3>
+                  <div className="space-y-4">
+                    {relatedPosts.map((relatedPost: any) => {
+                      const relatedProfile = relatedPost.authorProfile;
+                      const readTime = `${Math.ceil(5 + Math.random() * 10)} min read`;
+                      
+                      return (
+                        <Link
+                          key={relatedPost.id}
+                          to={`/article/${relatedPost.id}`}
+                          className="block group"
+                        >
+                          <div className="flex items-start gap-3">
+                            <img
+                              src={relatedProfile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${relatedPost.id}`}
+                              alt={relatedProfile?.display_name || 'Author'}
+                              className="w-8 h-8 rounded-full border border-border flex-shrink-0"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium leading-tight group-hover:text-primary transition-colors line-clamp-2">
+                                {relatedPost.title}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {relatedProfile?.display_name || 'Unknown'} · {readTime}
+                              </p>
+                            </div>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Tags */}
-              <div className="glass-card rounded-xl p-5">
-                <h3 className="font-semibold mb-4">Topics</h3>
-                <div className="flex flex-wrap gap-2">
-                  {articleData.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-3 py-1.5 text-xs rounded-lg bg-secondary text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer font-mono"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
+              {post.tags && post.tags.length > 0 && (
+                <div className="glass-card rounded-xl p-5">
+                  <h3 className="font-semibold mb-4">Topics</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {post.tags.map((tag: string) => (
+                      <span
+                        key={tag}
+                        className="px-3 py-1.5 text-sm rounded-full bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors cursor-pointer"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </motion.aside>
           </div>
         </div>
