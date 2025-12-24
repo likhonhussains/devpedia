@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, Heart, MessageSquare, UserPlus, Mail, Check, Trash2, BellRing } from 'lucide-react';
+import { Bell, Heart, MessageSquare, UserPlus, Mail, Check, Trash2, BellRing, AtSign } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,8 @@ const NotificationIcon = ({ type }: { type: Notification['type'] }) => {
       return <UserPlus className="w-4 h-4 text-green-500" />;
     case 'message':
       return <Mail className="w-4 h-4 text-purple-500" />;
+    case 'mention':
+      return <AtSign className="w-4 h-4 text-orange-500" />;
     default:
       return <Bell className="w-4 h-4" />;
   }
@@ -41,6 +43,8 @@ const getNotificationText = (notification: Notification) => {
       return `${actorName} started following you`;
     case 'message':
       return `${actorName} sent you a message`;
+    case 'mention':
+      return `${actorName} mentioned you${postTitle ? ` in "${postTitle.slice(0, 30)}${postTitle.length > 30 ? '...' : ''}"` : ''}`;
     default:
       return 'New notification';
   }

@@ -65,7 +65,7 @@ export const showBrowserNotification = ({ title, body, icon, tag, onClick }: Not
 };
 
 export const formatNotificationContent = (
-  type: 'like' | 'comment' | 'follow' | 'message',
+  type: 'like' | 'comment' | 'follow' | 'message' | 'mention',
   actorName: string,
   postTitle?: string
 ): { title: string; body: string } => {
@@ -89,6 +89,11 @@ export const formatNotificationContent = (
       return {
         title: 'New Message',
         body: `${actorName} sent you a message`,
+      };
+    case 'mention':
+      return {
+        title: 'You were mentioned',
+        body: `${actorName} mentioned you${postTitle ? ` in "${postTitle.slice(0, 40)}..."` : ''}`,
       };
     default:
       return {
