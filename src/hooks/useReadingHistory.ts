@@ -19,6 +19,7 @@ interface ReadingHistoryItem {
     user_id: string;
     category: string | null;
     updated_at: string;
+    status: string;
   };
   author: {
     display_name: string;

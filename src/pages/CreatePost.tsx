@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { 
@@ -20,7 +20,8 @@ import {
   FileText,
   StickyNote,
   Video,
-  Send
+  Send,
+  Save
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -43,6 +44,8 @@ const popularTags = [
 
 const CreatePost = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const draftId = searchParams.get('draft');
   const { toast } = useToast();
   const { user, loading } = useAuth();
   const [contentType, setContentType] = useState('post');
@@ -53,7 +56,44 @@ const CreatePost = () => {
   const [customTag, setCustomTag] = useState('');
   const [isPreview, setIsPreview] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('general');
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(draftId);
+
+  // Load draft if editing
+  useEffect(() => {
+    const loadDraft = async () => {
+      if (!draftId || !user) return;
+
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('id', draftId)
+        .eq('user_id', user.id)
+        .eq('status', 'draft')
+        .maybeSingle();
+
+      if (error || !data) {
+        toast({
+          title: 'Draft not found',
+          description: 'The draft you are looking for does not exist.',
+          variant: 'destructive',
+        });
+        navigate('/create');
+        return;
+      }
+
+      setContentType(data.type);
+      setTitle(data.title);
+      setContent(data.content);
+      setVideoUrl(data.video_url || '');
+      setSelectedTags(data.tags || []);
+      setSelectedCategory(data.category || 'general');
+      setCurrentDraftId(data.id);
+    };
+
+    loadDraft();
+  }, [draftId, user, navigate, toast]);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -147,6 +187,82 @@ const CreatePost = () => {
     }, 0);
   };
 
+  const handleSaveDraft = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to save drafts.",
+        variant: "destructive",
+      });
+      navigate('/auth');
+      return;
+    }
+
+    if (!title.trim() && !content.trim()) {
+      toast({
+        title: "Content required",
+        description: "Please add a title or content before saving.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSavingDraft(true);
+
+    try {
+      if (currentDraftId) {
+        // Update existing draft
+        const { error } = await supabase
+          .from('posts')
+          .update({
+            type: contentType,
+            title: title.trim() || 'Untitled Draft',
+            content: content.trim(),
+            video_url: contentType === 'video' ? videoUrl.trim() : null,
+            tags: selectedTags,
+            category: selectedCategory,
+            status: 'draft',
+          })
+          .eq('id', currentDraftId);
+
+        if (error) throw error;
+      } else {
+        // Create new draft
+        const { data, error } = await supabase
+          .from('posts')
+          .insert({
+            user_id: user.id,
+            type: contentType,
+            title: title.trim() || 'Untitled Draft',
+            content: content.trim(),
+            video_url: contentType === 'video' ? videoUrl.trim() : null,
+            tags: selectedTags,
+            category: selectedCategory,
+            status: 'draft',
+          })
+          .select('id')
+          .single();
+
+        if (error) throw error;
+        setCurrentDraftId(data.id);
+      }
+
+      toast({
+        title: "Draft saved!",
+        description: "Your draft has been saved. You can continue editing later.",
+      });
+    } catch (error: any) {
+      console.error('Error saving draft:', error);
+      toast({
+        title: "Failed to save draft",
+        description: error.message || "An error occurred while saving your draft.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingDraft(false);
+    }
+  };
+
   const handlePublish = async () => {
     if (!user) {
       toast({
@@ -188,17 +304,37 @@ const CreatePost = () => {
     setIsPublishing(true);
 
     try {
-      const { error } = await supabase.from('posts').insert({
-        user_id: user.id,
-        type: contentType,
-        title: title.trim(),
-        content: content.trim(),
-        video_url: contentType === 'video' ? videoUrl.trim() : null,
-        tags: selectedTags,
-        category: selectedCategory,
-      });
+      if (currentDraftId) {
+        // Update draft to published
+        const { error } = await supabase
+          .from('posts')
+          .update({
+            type: contentType,
+            title: title.trim(),
+            content: content.trim(),
+            video_url: contentType === 'video' ? videoUrl.trim() : null,
+            tags: selectedTags,
+            category: selectedCategory,
+            status: 'published',
+          })
+          .eq('id', currentDraftId);
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        // Create new published post
+        const { error } = await supabase.from('posts').insert({
+          user_id: user.id,
+          type: contentType,
+          title: title.trim(),
+          content: content.trim(),
+          video_url: contentType === 'video' ? videoUrl.trim() : null,
+          tags: selectedTags,
+          category: selectedCategory,
+          status: 'published',
+        });
+
+        if (error) throw error;
+      }
 
       toast({
         title: "Post published!",
@@ -532,18 +668,47 @@ const CreatePost = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
-            className="flex items-center justify-between"
+            className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
           >
-            <p className="text-sm text-muted-foreground">
-              {content.length} characters · {content.split(/\s+/).filter(Boolean).length} words
-            </p>
+            <div className="flex items-center gap-4">
+              <p className="text-sm text-muted-foreground">
+                {content.length} characters · {content.split(/\s+/).filter(Boolean).length} words
+              </p>
+              {currentDraftId && (
+                <span className="text-xs px-2 py-1 rounded-full bg-secondary text-muted-foreground">
+                  Editing draft
+                </span>
+              )}
+            </div>
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => navigate('/')}>
                 Cancel
               </Button>
               <Button
+                variant="secondary"
+                onClick={handleSaveDraft}
+                disabled={isSavingDraft || isPublishing}
+                className="gap-2"
+              >
+                {isSavingDraft ? (
+                  <>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                      className="w-4 h-4 border-2 border-foreground border-t-transparent rounded-full"
+                    />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Save Draft
+                  </>
+                )}
+              </Button>
+              <Button
                 onClick={handlePublish}
-                disabled={isPublishing}
+                disabled={isPublishing || isSavingDraft}
                 className="gap-2"
               >
                 {isPublishing ? (
