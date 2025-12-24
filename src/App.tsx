@@ -12,6 +12,7 @@ import CreatePost from "./pages/CreatePost";
 import Auth from "./pages/Auth";
 import ReadingHistory from "./pages/ReadingHistory";
 import Messages from "./pages/Messages";
+import UserSearch from "./pages/UserSearch";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
               <Route path="/create" element={<CreatePost />} />
               <Route path="/history" element={<ReadingHistory />} />
               <Route path="/messages" element={<Messages />} />
+              <Route path="/users" element={<UserSearch />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
