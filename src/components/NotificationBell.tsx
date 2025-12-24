@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, Heart, MessageSquare, UserPlus, Mail, Check, Trash2 } from 'lucide-react';
+import { Bell, Heart, MessageSquare, UserPlus, Mail, Check, Trash2, BellRing } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNotifications, Notification } from '@/hooks/useNotifications';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 const NotificationIcon = ({ type }: { type: Notification['type'] }) => {
   switch (type) {
@@ -48,6 +49,7 @@ const getNotificationText = (notification: Notification) => {
 const NotificationBell = () => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
   const {
     notifications,
     isLoading,
@@ -55,7 +57,26 @@ const NotificationBell = () => {
     markAsRead,
     markAllAsRead,
     deleteNotification,
+    notificationPermission,
+    canRequestPermission,
+    requestPermission,
   } = useNotifications();
+
+  const handleEnableNotifications = async () => {
+    const result = await requestPermission();
+    if (result === 'granted') {
+      toast({
+        title: "Notifications enabled",
+        description: "You'll receive browser notifications for new activity.",
+      });
+    } else if (result === 'denied') {
+      toast({
+        title: "Notifications blocked",
+        description: "Please enable notifications in your browser settings.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleNotificationClick = (notification: Notification) => {
     if (!notification.read_at) {
@@ -106,6 +127,20 @@ const NotificationBell = () => {
             </Button>
           )}
         </div>
+
+        {canRequestPermission && (
+          <div className="px-4 py-2 border-b border-border bg-muted/30">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full gap-2 text-xs"
+              onClick={handleEnableNotifications}
+            >
+              <BellRing className="w-3 h-3" />
+              Enable push notifications
+            </Button>
+          </div>
+        )}
 
         <ScrollArea className="h-[300px]">
           {isLoading ? (
