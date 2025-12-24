@@ -3,19 +3,23 @@ import { motion } from 'framer-motion';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
-import { FileText, StickyNote, Video, PenLine, SearchX } from 'lucide-react';
+import { FileText, StickyNote, Video, PenLine, SearchX, Users } from 'lucide-react';
 import ContentCard from './ContentCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
+import { useAuth } from '@/contexts/AuthContext';
+import { FeedMode } from './FeedToggle';
 
 interface ContentFeedProps {
   activeTab: string;
   searchQuery?: string;
   category?: string;
+  feedMode?: FeedMode;
 }
 
-const ContentFeed = ({ activeTab, searchQuery = '', category = 'all' }: ContentFeedProps) => {
+const ContentFeed = ({ activeTab, searchQuery = '', category = 'all', feedMode = 'all' }: ContentFeedProps) => {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const postType = activeTab === 'notes' ? 'note' : activeTab === 'videos' ? 'video' : 'post';
 
@@ -41,8 +45,29 @@ const ContentFeed = ({ activeTab, searchQuery = '', category = 'all' }: ContentF
     };
   }, [queryClient]);
 
+  // Fetch followed user IDs for following feed
+  const { data: followedUserIds = [] } = useQuery({
+    queryKey: ['followed-users', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+
+      const { data, error } = await supabase
+        .from('followers')
+        .select('following_id')
+        .eq('follower_id', user.id);
+
+      if (error) {
+        console.error('Error fetching followed users:', error);
+        return [];
+      }
+
+      return data.map((f) => f.following_id);
+    },
+    enabled: !!user && feedMode === 'following',
+  });
+
   const { data: posts, isLoading } = useQuery({
-    queryKey: ['posts', postType, category],
+    queryKey: ['posts', postType, category, feedMode, followedUserIds],
     queryFn: async () => {
       let query = supabase
         .from('posts')
@@ -52,6 +77,14 @@ const ContentFeed = ({ activeTab, searchQuery = '', category = 'all' }: ContentF
 
       if (category && category !== 'all') {
         query = query.eq('category', category);
+      }
+
+      // Filter by followed users if in following mode
+      if (feedMode === 'following' && followedUserIds.length > 0) {
+        query = query.in('user_id', followedUserIds);
+      } else if (feedMode === 'following' && followedUserIds.length === 0) {
+        // Return empty if following mode but no one followed
+        return [];
       }
 
       const { data: postsData, error: postsError } = await query;
@@ -149,6 +182,31 @@ const ContentFeed = ({ activeTab, searchQuery = '', category = 'all' }: ContentF
         <p className="text-muted-foreground">
           No {postType}s matching "{searchQuery}" were found. Try a different search term.
         </p>
+      </motion.div>
+    );
+  }
+
+  // Empty state for following feed (no one followed)
+  if (content.length === 0 && feedMode === 'following') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mt-12 max-w-md mx-auto text-center"
+      >
+        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-primary/10 flex items-center justify-center">
+          <Users className="w-10 h-10 text-primary" />
+        </div>
+        <h3 className="text-xl font-semibold mb-2">No posts from people you follow</h3>
+        <p className="text-muted-foreground mb-6">
+          Start following people to see their posts in your feed.
+        </p>
+        <Button asChild size="lg">
+          <Link to="/users">
+            <Users className="w-4 h-4 mr-2" />
+            Find people to follow
+          </Link>
+        </Button>
       </motion.div>
     );
   }
