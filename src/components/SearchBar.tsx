@@ -11,10 +11,10 @@ const SearchBar = ({ value, onChange, onFocus }: SearchBarProps) => {
   return (
     <div className="w-[90%] sm:w-[60%] mx-auto">
       <div className="relative group">
-        {/* Glow effect on focus */}
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 rounded-xl blur opacity-0 group-focus-within:opacity-100 transition-opacity duration-300" />
+        {/* Always-visible glow effect */}
+        <div className="absolute -inset-1 bg-gradient-to-r from-primary/40 via-primary/20 to-primary/40 rounded-xl blur-md opacity-75 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-300 animate-pulse" />
         
-        <div className="relative flex items-center bg-card border border-border/50 rounded-xl transition-all duration-200 group-focus-within:border-primary/30">
+        <div className="relative flex items-center bg-card border-2 border-primary/40 rounded-xl transition-all duration-200 group-hover:border-primary/60 group-focus-within:border-primary shadow-lg shadow-primary/10">
           <Search className="absolute left-4 w-5 h-5 text-muted-foreground" />
           <input
             type="text"
