@@ -115,7 +115,8 @@ const ContentFeed = ({ activeTab, searchQuery = '', category = 'all', feedMode =
       let query = supabase
         .from('posts')
         .select('*')
-        .eq('type', postType);
+        .eq('type', postType)
+        .eq('status', 'published');
 
       // Apply sorting (only for non-recommended feeds)
       if (feedMode !== 'recommended') {
