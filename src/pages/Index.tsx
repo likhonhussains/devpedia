@@ -5,12 +5,14 @@ import SearchBar from '@/components/SearchBar';
 import ContentTabs from '@/components/ContentTabs';
 import ContentFeed from '@/components/ContentFeed';
 import CategoryFilter from '@/components/CategoryFilter';
+import FeedToggle, { FeedMode } from '@/components/FeedToggle';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('posts');
   const [showFeed, setShowFeed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
+  const [feedMode, setFeedMode] = useState<FeedMode>('all');
 
   return (
     <div className="min-h-screen relative flex flex-col">
@@ -82,8 +84,22 @@ const Index = () => {
               >
                 <CategoryFilter activeCategory={activeCategory} onCategoryChange={setActiveCategory} />
               </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.15 }}
+                className="mt-4"
+              >
+                <FeedToggle activeMode={feedMode} onModeChange={setFeedMode} />
+              </motion.div>
               
-              <ContentFeed activeTab={activeTab} searchQuery={searchQuery} category={activeCategory} />
+              <ContentFeed 
+                activeTab={activeTab} 
+                searchQuery={searchQuery} 
+                category={activeCategory}
+                feedMode={feedMode}
+              />
               
               <div className="text-center mt-8">
                 <button
