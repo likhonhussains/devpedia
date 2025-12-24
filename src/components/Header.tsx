@@ -8,6 +8,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import { useMessages } from '@/hooks/useMessages';
 import NotificationBell from '@/components/NotificationBell';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import logoIcon from '@/assets/logo.png';
 
 const Header = () => {
   const { user, profile, signOut } = useAuth();
@@ -46,8 +47,8 @@ const Header = () => {
       <div className="mx-4 sm:mx-6 lg:mx-8 mt-4">
         <nav className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 rounded-xl bg-card/80 backdrop-blur-xl border border-border/50">
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">B</span>
+            <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center p-0.5">
+              <img src={logoIcon} alt="Basic Comet" className="w-full h-full object-contain" />
             </div>
             <span className="font-semibold text-sm">Basic Comet</span>
           </Link>
