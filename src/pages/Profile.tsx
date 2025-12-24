@@ -395,26 +395,26 @@ const Profile = () => {
                   </div>
 
                   {/* Badges */}
-                  <div className="mt-4">
+                  <div className="mt-3 sm:mt-4">
                     <BadgeDisplay userId={profileData.user_id} />
                   </div>
 
                   {/* Stats Row */}
-                  <div className="flex items-center gap-6 mt-4">
+                  <div className="flex items-center gap-4 sm:gap-6 mt-3 sm:mt-4">
                     <button 
                       onClick={() => openFollowersModal('followers')}
-                      className="group flex items-center gap-2 hover:text-primary transition-colors"
+                      className="group flex items-center gap-1.5 sm:gap-2 hover:text-primary transition-colors"
                     >
-                      <Users className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
-                      <span className="font-semibold">{followersCount.toLocaleString()}</span>
-                      <span className="text-muted-foreground text-sm">followers</span>
+                      <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground group-hover:text-primary" />
+                      <span className="font-semibold text-sm sm:text-base">{followersCount.toLocaleString()}</span>
+                      <span className="text-muted-foreground text-xs sm:text-sm">followers</span>
                     </button>
                     <button 
                       onClick={() => openFollowersModal('following')}
-                      className="group flex items-center gap-2 hover:text-primary transition-colors"
+                      className="group flex items-center gap-1.5 sm:gap-2 hover:text-primary transition-colors"
                     >
-                      <span className="font-semibold">{followingCount.toLocaleString()}</span>
-                      <span className="text-muted-foreground text-sm">following</span>
+                      <span className="font-semibold text-sm sm:text-base">{followingCount.toLocaleString()}</span>
+                      <span className="text-muted-foreground text-xs sm:text-sm">following</span>
                     </button>
                   </div>
                 </div>
@@ -427,7 +427,7 @@ const Profile = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="mb-6"
+            className="mb-4 sm:mb-6"
           >
             <ProfileStats
               postsCount={userPosts.length}
@@ -438,8 +438,31 @@ const Profile = () => {
           </motion.div>
 
           {/* Sidebar Layout for Completion & Activity */}
-          <div className="grid md:grid-cols-3 gap-6 mb-6">
-            <div className="md:col-span-2 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
+            {/* Sidebar on mobile - shows first */}
+            <div className="lg:hidden space-y-4">
+              <RecentActivity userId={profileData.user_id} />
+              
+              {/* Achievements Preview */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass-card rounded-xl p-3 sm:p-4"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-sm sm:text-base flex items-center gap-2">
+                    <Award className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
+                    Achievements
+                  </h3>
+                  <Link to="/achievements" className="text-xs sm:text-sm text-primary hover:underline">
+                    View all
+                  </Link>
+                </div>
+                <BadgeDisplay userId={profileData.user_id} compact />
+              </motion.div>
+            </div>
+
+            <div className="lg:col-span-2 space-y-4 sm:space-y-6">
               {/* Profile Completion (only for own profile) */}
               {isOwnProfile && (
                 <ProfileCompletion profile={profileData} />
@@ -450,7 +473,7 @@ const Profile = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="flex items-center gap-2 overflow-x-auto pb-2"
+                className="flex items-center gap-1 sm:gap-2 overflow-x-auto pb-2 -mx-1 px-1"
               >
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
@@ -462,13 +485,13 @@ const Profile = () => {
                       onClick={() => setActiveTab(tab.id)}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className={`flex items-center gap-2 px-5 py-2.5 rounded-lg transition-all duration-300 whitespace-nowrap ${
+                      className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg transition-all duration-300 whitespace-nowrap text-sm sm:text-base ${
                         isActive
                           ? 'bg-primary/10 text-primary tab-active'
                           : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
                       }`}
                     >
-                      <Icon className="w-4 h-4" />
+                      <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       <span className="font-medium">{tab.label}</span>
                       <span className={`text-xs px-1.5 py-0.5 rounded-md ${isActive ? 'bg-primary/20' : 'bg-secondary'}`}>
                         {tab.count}
@@ -515,18 +538,18 @@ const Profile = () => {
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="text-center py-16"
+                  className="text-center py-12 sm:py-16"
                 >
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-secondary flex items-center justify-center">
-                    {activeTab === 'posts' && <FileText className="w-8 h-8 text-muted-foreground" />}
-                    {activeTab === 'notes' && <StickyNote className="w-8 h-8 text-muted-foreground" />}
-                    {activeTab === 'videos' && <Video className="w-8 h-8 text-muted-foreground" />}
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 rounded-full bg-secondary flex items-center justify-center">
+                    {activeTab === 'posts' && <FileText className="w-6 h-6 sm:w-8 sm:h-8 text-muted-foreground" />}
+                    {activeTab === 'notes' && <StickyNote className="w-6 h-6 sm:w-8 sm:h-8 text-muted-foreground" />}
+                    {activeTab === 'videos' && <Video className="w-6 h-6 sm:w-8 sm:h-8 text-muted-foreground" />}
                   </div>
-                  <p className="text-muted-foreground mb-4">
+                  <p className="text-sm sm:text-base text-muted-foreground mb-4">
                     {isOwnProfile ? `You haven't created any ${activeTab} yet` : `No ${activeTab} yet`}
                   </p>
                   {isOwnProfile && (
-                    <Button asChild variant="outline">
+                    <Button asChild variant="outline" size="sm">
                       <Link to="/create">
                         <PenSquare className="w-4 h-4 mr-2" />
                         Create your first {activeTab.slice(0, -1)}
@@ -537,8 +560,8 @@ const Profile = () => {
               )}
             </div>
 
-            {/* Sidebar */}
-            <div className="space-y-6">
+            {/* Sidebar - Desktop only */}
+            <div className="hidden lg:block space-y-4 sm:space-y-6">
               <RecentActivity userId={profileData.user_id} />
               
               {/* Achievements Preview */}

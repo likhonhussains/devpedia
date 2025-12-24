@@ -37,23 +37,23 @@ const ProfileCompletion = ({ profile }: ProfileCompletionProps) => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="glass-card rounded-xl p-4"
+      className="glass-card rounded-xl p-3 sm:p-4"
     >
-      <div className="flex items-center gap-3 mb-3">
-        <AlertCircle className="w-5 h-5 text-amber-500" />
-        <h3 className="font-semibold">Complete Your Profile</h3>
-        <span className="ml-auto text-sm text-muted-foreground">{percentage}%</span>
+      <div className="flex items-center gap-2 sm:gap-3 mb-3">
+        <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 flex-shrink-0" />
+        <h3 className="font-semibold text-sm sm:text-base">Complete Your Profile</h3>
+        <span className="ml-auto text-xs sm:text-sm text-muted-foreground">{percentage}%</span>
       </div>
       
-      <Progress value={percentage} className="h-2 mb-4" />
+      <Progress value={percentage} className="h-2 mb-3 sm:mb-4" />
       
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2">
         {fields.map((field) => (
-          <div key={field.key} className="flex items-center gap-2 text-sm">
+          <div key={field.key} className="flex items-center gap-2 text-xs sm:text-sm">
             {field.completed ? (
-              <CheckCircle2 className="w-4 h-4 text-green-500" />
+              <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
             ) : (
-              <Circle className="w-4 h-4 text-muted-foreground" />
+              <Circle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground flex-shrink-0" />
             )}
             <span className={field.completed ? 'text-muted-foreground line-through' : ''}>
               {field.label}
