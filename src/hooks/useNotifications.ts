@@ -13,7 +13,7 @@ import {
 export interface Notification {
   id: string;
   user_id: string;
-  type: 'like' | 'comment' | 'follow' | 'message';
+  type: 'like' | 'comment' | 'follow' | 'message' | 'mention';
   actor_id: string;
   post_id: string | null;
   comment_id: string | null;

@@ -10,12 +10,13 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useComments } from '@/hooks/useComments';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
+import MentionInput from './MentionInput';
+import MentionText from './MentionText';
 
 interface CommentsSheetProps {
   postId: string;
@@ -112,7 +113,7 @@ const CommentsSheet = ({ postId, postTitle, commentsCount }: CommentsSheetProps)
                         )}
                       </div>
                       <p className="text-sm text-foreground/90 mt-1 break-words">
-                        {comment.content}
+                        <MentionText text={comment.content} />
                       </p>
                     </div>
                   </motion.div>
@@ -125,11 +126,11 @@ const CommentsSheet = ({ postId, postTitle, commentsCount }: CommentsSheetProps)
         {user ? (
           <form onSubmit={handleSubmit} className="mt-4 pt-4 border-t border-border">
             <div className="flex gap-2">
-              <Textarea
+              <MentionInput
                 value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Write a comment..."
-                className="min-h-[80px] resize-none"
+                onChange={setNewComment}
+                placeholder="Write a comment... Use @username to mention someone"
+                minHeight="80px"
                 maxLength={1000}
               />
             </div>
