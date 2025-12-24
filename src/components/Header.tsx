@@ -1,22 +1,40 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { PenLine, LogOut, User, History, MessageCircle, Users, Trophy, FileEdit, Award } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { PenLine, LogOut, User, History, MessageCircle, Users, Trophy, Award, Menu, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useMessages } from '@/hooks/useMessages';
 import NotificationBell from '@/components/NotificationBell';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 const Header = () => {
   const { user, profile, signOut } = useAuth();
   const { getTotalUnreadCount } = useMessages();
   const navigate = useNavigate();
   const unreadCount = getTotalUnreadCount();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
+    setMobileMenuOpen(false);
     await signOut();
     navigate('/');
   };
+
+  const handleNavigate = (path: string) => {
+    setMobileMenuOpen(false);
+    navigate(path);
+  };
+
+  const menuItems = [
+    { icon: Award, label: 'Achievements', path: '/achievements' },
+    { icon: Trophy, label: 'Leaderboard', path: '/leaderboard' },
+    { icon: Users, label: 'People', path: '/users' },
+    { icon: History, label: 'History', path: '/history' },
+    { icon: MessageCircle, label: 'Messages', path: '/messages', badge: unreadCount },
+    { icon: PenLine, label: 'Create', path: '/create' },
+  ];
 
   return (
     <motion.header
@@ -38,89 +56,114 @@ const Header = () => {
             <ThemeToggle />
             {user ? (
               <>
-                <NotificationBell />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-2 text-muted-foreground hover:text-foreground"
-                  onClick={() => navigate('/achievements')}
-                >
-                  <Award className="w-4 h-4" />
-                  <span className="hidden sm:inline">Achievements</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-2 text-muted-foreground hover:text-foreground"
-                  onClick={() => navigate('/leaderboard')}
-                >
-                  <Trophy className="w-4 h-4" />
-                  <span className="hidden sm:inline">Leaderboard</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-2 text-muted-foreground hover:text-foreground"
-                  onClick={() => navigate('/users')}
-                >
-                  <Users className="w-4 h-4" />
-                  <span className="hidden sm:inline">People</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-2 text-muted-foreground hover:text-foreground"
-                  onClick={() => navigate('/history')}
-                >
-                  <History className="w-4 h-4" />
-                  <span className="hidden sm:inline">History</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-2 text-muted-foreground hover:text-foreground relative"
-                  onClick={() => navigate('/messages')}
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span className="hidden sm:inline">Messages</span>
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center">
-                      {unreadCount > 9 ? '9+' : unreadCount}
+                {/* Desktop Navigation */}
+                <div className="hidden md:flex items-center gap-1">
+                  <NotificationBell />
+                  {menuItems.map((item) => (
+                    <Button
+                      key={item.path}
+                      variant="ghost"
+                      size="sm"
+                      className="gap-2 text-muted-foreground hover:text-foreground relative"
+                      onClick={() => navigate(item.path)}
+                    >
+                      <item.icon className="w-4 h-4" />
+                      <span className="hidden lg:inline">{item.label}</span>
+                      {item.badge && item.badge > 0 && (
+                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center">
+                          {item.badge > 9 ? '9+' : item.badge}
+                        </span>
+                      )}
+                    </Button>
+                  ))}
+
+                  <Link
+                    to={`/profile/${profile?.username || 'me'}`}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-secondary/50 transition-colors"
+                  >
+                    <img
+                      src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
+                      alt="Avatar"
+                      className="w-6 h-6 rounded-full ring-1 ring-border"
+                    />
+                    <span className="text-sm font-medium hidden lg:inline max-w-24 truncate">
+                      {profile?.display_name}
                     </span>
-                  )}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-2 text-muted-foreground hover:text-foreground"
-                  onClick={() => navigate('/create')}
-                >
-                  <PenLine className="w-4 h-4" />
-                  <span className="hidden sm:inline">Create</span>
-                </Button>
+                  </Link>
 
-                <Link
-                  to={`/profile/${profile?.username || 'me'}`}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-secondary/50 transition-colors"
-                >
-                  <img
-                    src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
-                    alt="Avatar"
-                    className="w-6 h-6 rounded-full ring-1 ring-border"
-                  />
-                  <span className="text-sm font-medium hidden sm:inline max-w-24 truncate">
-                    {profile?.display_name}
-                  </span>
-                </Link>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="w-8 h-8 text-muted-foreground hover:text-foreground"
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </Button>
+                </div>
 
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="w-8 h-8 text-muted-foreground hover:text-foreground"
-                  onClick={handleSignOut}
-                >
-                  <LogOut className="w-4 h-4" />
-                </Button>
+                {/* Mobile Navigation */}
+                <div className="flex md:hidden items-center gap-1">
+                  <NotificationBell />
+                  <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                    <SheetTrigger asChild>
+                      <Button variant="ghost" size="icon" className="w-8 h-8">
+                        <Menu className="w-5 h-5" />
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="right" className="w-72 p-0">
+                      <div className="flex flex-col h-full">
+                        {/* Profile Section */}
+                        <div 
+                          className="p-4 border-b border-border cursor-pointer hover:bg-secondary/50 transition-colors"
+                          onClick={() => handleNavigate(`/profile/${profile?.username || 'me'}`)}
+                        >
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
+                              alt="Avatar"
+                              className="w-10 h-10 rounded-full ring-2 ring-border"
+                            />
+                            <div>
+                              <p className="font-medium">{profile?.display_name}</p>
+                              <p className="text-sm text-muted-foreground">@{profile?.username}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Menu Items */}
+                        <div className="flex-1 py-2">
+                          {menuItems.map((item) => (
+                            <button
+                              key={item.path}
+                              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-secondary/50 transition-colors relative"
+                              onClick={() => handleNavigate(item.path)}
+                            >
+                              <item.icon className="w-5 h-5 text-muted-foreground" />
+                              <span>{item.label}</span>
+                              {item.badge && item.badge > 0 && (
+                                <span className="ml-auto bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
+                                  {item.badge > 9 ? '9+' : item.badge}
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Sign Out */}
+                        <div className="p-4 border-t border-border">
+                          <Button
+                            variant="outline"
+                            className="w-full gap-2"
+                            onClick={handleSignOut}
+                          >
+                            <LogOut className="w-4 h-4" />
+                            Sign Out
+                          </Button>
+                        </div>
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                </div>
               </>
             ) : (
               <Button
