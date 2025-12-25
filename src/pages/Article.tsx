@@ -15,7 +15,9 @@ import {
   Clock,
   Send,
   Loader2,
-  Edit
+  Edit,
+  User,
+  TrendingUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ParticleBackground from '@/components/ParticleBackground';
@@ -26,6 +28,7 @@ import { useComments } from '@/hooks/useComments';
 import { useLikePost } from '@/hooks/useLikePost';
 import { formatDistanceToNow, format } from 'date-fns';
 import ShareDropdown from '@/components/ShareDropdown';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 const Article = () => {
   const { slug } = useParams();
@@ -37,7 +40,6 @@ const Article = () => {
   const { data: post, isLoading: postLoading, error: postError } = useQuery({
     queryKey: ['post', slug],
     queryFn: async () => {
-      // First get the post
       const { data: postData, error: postError } = await supabase
         .from('posts')
         .select('*')
@@ -47,7 +49,6 @@ const Article = () => {
       if (postError) throw postError;
       if (!postData) return null;
 
-      // Then get the author profile
       const { data: profileData } = await supabase
         .from('profiles')
         .select('display_name, username, avatar_url, bio')
@@ -76,7 +77,6 @@ const Article = () => {
       if (postsError) throw postsError;
       if (!postsData) return [];
 
-      // Get profiles for each post
       const userIds = [...new Set(postsData.map(p => p.user_id))];
       const { data: profiles } = await supabase
         .from('profiles')
@@ -93,10 +93,7 @@ const Article = () => {
     enabled: !!post,
   });
 
-  // Use comments hook
   const { comments, isLoading: commentsLoading, addComment, isAddingComment } = useComments(slug || '');
-
-  // Use like hook
   const { isLiked, toggleLike } = useLikePost(slug || '');
 
   const handleAddComment = () => {
@@ -105,7 +102,6 @@ const Article = () => {
     setNewComment('');
   };
 
-  // Calculate read time (rough estimate: 200 words per minute)
   const calculateReadTime = (content: string) => {
     const words = content.split(/\s+/).length;
     const minutes = Math.ceil(words / 200);
@@ -114,11 +110,14 @@ const Article = () => {
 
   if (postLoading) {
     return (
-      <div className="min-h-screen relative overflow-hidden">
+      <div className="min-h-screen relative overflow-hidden bg-background">
         <ParticleBackground />
         <Header />
-        <main className="relative z-10 pt-24 pb-20 px-6 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <main className="relative z-10 pt-24 pb-20 px-4 flex items-center justify-center min-h-[60vh]">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="w-10 h-10 animate-spin text-primary" />
+            <p className="text-muted-foreground text-sm">Loading article...</p>
+          </div>
         </main>
       </div>
     );
@@ -126,16 +125,21 @@ const Article = () => {
 
   if (postError || !post) {
     return (
-      <div className="min-h-screen relative overflow-hidden">
+      <div className="min-h-screen relative overflow-hidden bg-background">
         <ParticleBackground />
         <Header />
-        <main className="relative z-10 pt-24 pb-20 px-6">
-          <div className="max-w-6xl mx-auto text-center">
-            <h1 className="text-2xl font-bold mb-4">Post not found</h1>
-            <p className="text-muted-foreground mb-6">The post you're looking for doesn't exist or has been removed.</p>
+        <main className="relative z-10 pt-24 pb-20 px-4">
+          <div className="max-w-2xl mx-auto text-center py-20">
+            <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
+              <MessageCircle className="w-10 h-10 text-muted-foreground" />
+            </div>
+            <h1 className="text-3xl font-bold mb-4">Post not found</h1>
+            <p className="text-muted-foreground mb-8 text-lg">
+              The post you're looking for doesn't exist or has been removed.
+            </p>
             <Link to="/">
-              <Button>
-                <ArrowLeft className="w-4 h-4 mr-2" />
+              <Button size="lg" className="gap-2">
+                <ArrowLeft className="w-4 h-4" />
                 Back to feed
               </Button>
             </Link>
@@ -148,184 +152,224 @@ const Article = () => {
   const authorProfile = post.authorProfile;
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden bg-background">
       <ParticleBackground />
       <Header />
 
-      <main className="relative z-10 pt-24 pb-20 px-6">
-        <div className="max-w-6xl mx-auto">
-          {/* Back Button */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4 }}
-          >
+      <main className="relative z-10 pt-20 pb-20">
+        {/* Hero Section with Category & Meta */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6 }}
+          className="border-b border-border bg-gradient-to-b from-muted/30 to-background"
+        >
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+            {/* Back Button */}
             <Link
               to="/"
-              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6 group"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
               <span>Back to feed</span>
             </Link>
-          </motion.div>
 
-          <div className="grid lg:grid-cols-[1fr_320px] gap-8">
-            {/* Main Content */}
+            {/* Category & Tags */}
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              {post.category && (
+                <span className="px-3 py-1 text-xs font-medium rounded-full bg-primary text-primary-foreground">
+                  {post.category}
+                </span>
+              )}
+              {post.tags && post.tags.slice(0, 3).map((tag: string) => (
+                <span
+                  key={tag}
+                  className="px-3 py-1 text-xs rounded-full bg-secondary text-secondary-foreground font-mono"
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
+
+            {/* Title */}
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight tracking-tight mb-6 text-balance"
+            >
+              {post.title}
+            </motion.h1>
+
+            {/* Author & Meta Row */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="flex flex-wrap items-center gap-4 sm:gap-6"
+            >
+              <Link
+                to={`/profile/${authorProfile?.username || 'unknown'}`}
+                className="flex items-center gap-3 group"
+              >
+                <Avatar className="w-12 h-12 border-2 border-border group-hover:border-primary transition-colors">
+                  <AvatarImage 
+                    src={authorProfile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.user_id}`}
+                    alt={authorProfile?.display_name || 'Author'}
+                  />
+                  <AvatarFallback>
+                    <User className="w-5 h-5" />
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-semibold group-hover:text-primary transition-colors">
+                    {authorProfile?.display_name || 'Unknown Author'}
+                  </p>
+                  <p className="text-sm text-muted-foreground font-mono">
+                    @{authorProfile?.username || 'unknown'}
+                  </p>
+                </div>
+              </Link>
+
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4" />
+                  {format(new Date(post.created_at), 'MMM d, yyyy')}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Clock className="w-4 h-4" />
+                  {calculateReadTime(post.content)}
+                </span>
+              </div>
+
+              {user && user.id === post.user_id && (
+                <Link to={`/create?edit=${post.id}`} className="ml-auto">
+                  <Button variant="outline" size="sm" className="gap-1.5">
+                    <Edit className="w-4 h-4" />
+                    Edit Post
+                  </Button>
+                </Link>
+              )}
+            </motion.div>
+          </div>
+        </motion.div>
+
+        {/* Main Content Area */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+          <div className="grid lg:grid-cols-[1fr_340px] gap-8 lg:gap-12">
+            {/* Article Content */}
             <motion.article
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="glass-card rounded-2xl overflow-hidden"
+              transition={{ duration: 0.5, delay: 0.3 }}
             >
-              {/* Article Header */}
-              <div className="p-6 md:p-8 border-b border-border">
-                {/* Tags */}
-                {post.tags && post.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-4">
+              {/* Content Body */}
+              <div className="prose prose-lg max-w-none dark:prose-invert prose-headings:font-bold prose-headings:tracking-tight prose-h2:text-2xl prose-h3:text-xl prose-p:text-foreground/85 prose-p:leading-relaxed prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-strong:text-foreground prose-code:text-primary prose-code:bg-secondary prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-mono prose-code:text-sm prose-pre:bg-secondary prose-pre:border prose-pre:border-border prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:not-italic prose-table:border-collapse prose-th:border prose-th:border-border prose-th:bg-secondary prose-th:p-3 prose-td:border prose-td:border-border prose-td:p-3 prose-img:rounded-xl prose-hr:border-border">
+                <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+                  {post.content}
+                </ReactMarkdown>
+              </div>
+
+              {/* Tags Section */}
+              {post.tags && post.tags.length > 0 && (
+                <div className="mt-10 pt-8 border-t border-border">
+                  <div className="flex flex-wrap gap-2">
                     {post.tags.map((tag: string) => (
                       <span
                         key={tag}
-                        className="px-3 py-1 text-xs rounded-full bg-primary/10 text-primary font-mono"
+                        className="px-4 py-2 text-sm rounded-full bg-secondary text-secondary-foreground hover:bg-accent transition-colors cursor-pointer"
                       >
                         #{tag}
                       </span>
                     ))}
                   </div>
-                )}
-
-                {/* Title */}
-                <h1 className="text-2xl md:text-4xl font-bold leading-tight mb-6">
-                  {post.title}
-                </h1>
-
-                {/* Author & Meta */}
-                <div className="flex flex-wrap items-center gap-4">
-                  <Link
-                    to={`/profile/${authorProfile?.username || 'unknown'}`}
-                    className="flex items-center gap-3 group"
-                  >
-                    <img
-                      src={authorProfile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.user_id}`}
-                      alt={authorProfile?.display_name || 'Author'}
-                      className="w-12 h-12 rounded-full border-2 border-border group-hover:border-primary transition-colors"
-                    />
-                    <div>
-                      <p className="font-medium group-hover:text-primary transition-colors">
-                        {authorProfile?.display_name || 'Unknown Author'}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {authorProfile?.bio || ''}
-                      </p>
-                    </div>
-                  </Link>
-
-                <div className="flex items-center gap-4 text-sm text-muted-foreground ml-auto">
-                    <span className="flex items-center gap-1.5">
-                      <Calendar className="w-4 h-4" />
-                      {format(new Date(post.created_at), 'MMMM d, yyyy')}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <Clock className="w-4 h-4" />
-                      {calculateReadTime(post.content)}
-                    </span>
-                    {user && user.id === post.user_id && (
-                      <Link to={`/create?edit=${post.id}`}>
-                        <Button variant="outline" size="sm" className="gap-1.5">
-                          <Edit className="w-4 h-4" />
-                          Edit
-                        </Button>
-                      </Link>
-                    )}
-                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Article Content */}
-              <div className="p-6 md:p-8">
-                <div className="prose prose-invert prose-lg max-w-none prose-headings:text-foreground prose-p:text-foreground/85 prose-a:text-primary prose-strong:text-foreground prose-code:text-primary prose-code:bg-secondary prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-secondary prose-pre:border prose-pre:border-border prose-blockquote:border-primary prose-blockquote:text-muted-foreground prose-table:border-collapse prose-th:border prose-th:border-border prose-th:bg-secondary prose-th:p-2 prose-td:border prose-td:border-border prose-td:p-2">
-                  <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
-                    {post.content}
-                  </ReactMarkdown>
-                </div>
-              </div>
-
-              {/* Article Actions */}
-              <div className="p-6 md:p-8 border-t border-border">
+              {/* Actions Bar */}
+              <div className="mt-8 py-6 border-t border-b border-border">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <button
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant={isLiked ? "default" : "outline"}
+                      size="sm"
                       onClick={toggleLike}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-                        isLiked
-                          ? 'bg-red-500/10 text-red-500'
-                          : 'hover:bg-secondary text-muted-foreground hover:text-foreground'
-                      }`}
+                      className={`gap-2 ${isLiked ? 'bg-red-500 hover:bg-red-600 text-white border-red-500' : ''}`}
                     >
-                      <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-                      <span className="font-medium">{post.likes_count + (isLiked ? 0 : 0)}</span>
-                    </button>
-                    <button className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
-                      <MessageCircle className="w-5 h-5" />
-                      <span className="font-medium">{comments?.length || 0}</span>
-                    </button>
+                      <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+                      <span>{post.likes_count}</span>
+                    </Button>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <MessageCircle className="w-4 h-4" />
+                      <span>{comments?.length || 0}</span>
+                    </Button>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <ShareDropdown title={post.title} url={window.location.href} />
-                    <button
+                    <Button
+                      variant={isBookmarked ? "default" : "outline"}
+                      size="sm"
                       onClick={() => setIsBookmarked(!isBookmarked)}
-                      className={`p-2 rounded-lg transition-colors ${
-                        isBookmarked
-                          ? 'bg-primary/10 text-primary'
-                          : 'hover:bg-secondary text-muted-foreground hover:text-foreground'
-                      }`}
                     >
-                      <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} />
-                    </button>
+                      <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
+                    </Button>
                   </div>
                 </div>
               </div>
 
               {/* Comments Section */}
-              <div className="p-6 md:p-8 border-t border-border">
-                <h2 className="text-xl font-semibold mb-6">
-                  Comments ({comments?.length || 0})
+              <div className="mt-10">
+                <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                  <MessageCircle className="w-6 h-6" />
+                  Comments
+                  <span className="text-lg font-normal text-muted-foreground">
+                    ({comments?.length || 0})
+                  </span>
                 </h2>
 
                 {/* Add Comment */}
                 {user ? (
-                  <div className="flex gap-3 mb-8">
-                    <img
-                      src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
-                      alt="Your avatar"
-                      className="w-10 h-10 rounded-full border-2 border-border flex-shrink-0"
-                    />
-                    <div className="flex-1 relative">
+                  <div className="flex gap-4 mb-8 p-4 rounded-xl bg-muted/50 border border-border">
+                    <Avatar className="w-10 h-10 border border-border flex-shrink-0">
+                      <AvatarImage 
+                        src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
+                        alt="Your avatar"
+                      />
+                      <AvatarFallback>
+                        <User className="w-4 h-4" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 space-y-3">
                       <textarea
                         value={newComment}
                         onChange={(e) => setNewComment(e.target.value)}
-                        placeholder="Add a comment..."
+                        placeholder="Share your thoughts..."
                         rows={3}
-                        className="w-full bg-secondary rounded-xl p-4 pr-12 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+                        className="w-full bg-background rounded-lg p-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none border border-border"
                       />
-                      <button
-                        onClick={handleAddComment}
-                        disabled={!newComment.trim() || isAddingComment}
-                        className="absolute right-3 bottom-3 p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {isAddingComment ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Send className="w-4 h-4" />
-                        )}
-                      </button>
+                      <div className="flex justify-end">
+                        <Button
+                          onClick={handleAddComment}
+                          disabled={!newComment.trim() || isAddingComment}
+                          size="sm"
+                          className="gap-2"
+                        >
+                          {isAddingComment ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Send className="w-4 h-4" />
+                          )}
+                          Post Comment
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="mb-8 p-4 bg-secondary rounded-xl text-center">
-                    <p className="text-muted-foreground mb-2">Sign in to leave a comment</p>
+                  <div className="mb-8 p-6 rounded-xl bg-muted/50 border border-border text-center">
+                    <p className="text-muted-foreground mb-4">Sign in to join the conversation</p>
                     <Link to="/auth">
-                      <Button size="sm">Sign In</Button>
+                      <Button>Sign In</Button>
                     </Link>
                   </div>
                 )}
@@ -333,7 +377,7 @@ const Article = () => {
                 {/* Comments List */}
                 <div className="space-y-6">
                   {commentsLoading ? (
-                    <div className="flex justify-center py-8">
+                    <div className="flex justify-center py-12">
                       <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                     </div>
                   ) : comments && comments.length > 0 ? (
@@ -343,20 +387,24 @@ const Article = () => {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
-                        className="flex gap-3"
+                        className="flex gap-4 p-4 rounded-xl hover:bg-muted/30 transition-colors"
                       >
                         <Link to={`/profile/${comment.profiles?.username || 'unknown'}`} className="flex-shrink-0">
-                          <img
-                            src={comment.profiles?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.user_id}`}
-                            alt={comment.profiles?.display_name || 'User'}
-                            className="w-10 h-10 rounded-full border-2 border-border hover:border-primary transition-colors"
-                          />
+                          <Avatar className="w-10 h-10 border border-border hover:border-primary transition-colors">
+                            <AvatarImage 
+                              src={comment.profiles?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.user_id}`}
+                              alt={comment.profiles?.display_name || 'User'}
+                            />
+                            <AvatarFallback>
+                              <User className="w-4 h-4" />
+                            </AvatarFallback>
+                          </Avatar>
                         </Link>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
                             <Link
                               to={`/profile/${comment.profiles?.username || 'unknown'}`}
-                              className="font-medium text-sm hover:text-primary transition-colors"
+                              className="font-semibold text-sm hover:text-primary transition-colors"
                             >
                               {comment.profiles?.display_name || 'Unknown User'}
                             </Link>
@@ -367,15 +415,20 @@ const Article = () => {
                           <p className="text-sm text-foreground/85 leading-relaxed">
                             {comment.content}
                           </p>
-                          <button className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground hover:text-primary transition-colors">
+                          <button className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground hover:text-primary transition-colors">
                             <Heart className="w-3.5 h-3.5" />
-                            <span>{comment.likes_count || 0}</span>
+                            <span>{comment.likes_count || 0} likes</span>
                           </button>
                         </div>
                       </motion.div>
                     ))
                   ) : (
-                    <p className="text-center text-muted-foreground py-8">No comments yet. Be the first to comment!</p>
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                        <MessageCircle className="w-8 h-8 text-muted-foreground" />
+                      </div>
+                      <p className="text-muted-foreground">No comments yet. Be the first to comment!</p>
+                    </div>
                   )}
                 </div>
               </div>
@@ -385,30 +438,36 @@ const Article = () => {
             <motion.aside
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="space-y-6"
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="space-y-6 lg:sticky lg:top-24 lg:self-start"
             >
               {/* Author Card */}
-              <div className="glass-card rounded-xl p-5">
-                <Link
-                  to={`/profile/${authorProfile?.username || 'unknown'}`}
-                  className="flex items-center gap-3 mb-4 group"
-                >
-                  <img
-                    src={authorProfile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.user_id}`}
-                    alt={authorProfile?.display_name || 'Author'}
-                    className="w-14 h-14 rounded-full border-2 border-border group-hover:border-primary transition-colors"
-                  />
-                  <div>
-                    <p className="font-semibold group-hover:text-primary transition-colors">
+              <div className="rounded-2xl border border-border bg-card p-6">
+                <div className="text-center mb-4">
+                  <Link to={`/profile/${authorProfile?.username || 'unknown'}`}>
+                    <Avatar className="w-20 h-20 mx-auto mb-4 border-2 border-border hover:border-primary transition-colors">
+                      <AvatarImage 
+                        src={authorProfile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.user_id}`}
+                        alt={authorProfile?.display_name || 'Author'}
+                      />
+                      <AvatarFallback>
+                        <User className="w-8 h-8" />
+                      </AvatarFallback>
+                    </Avatar>
+                  </Link>
+                  <Link
+                    to={`/profile/${authorProfile?.username || 'unknown'}`}
+                    className="block"
+                  >
+                    <h3 className="font-bold text-lg hover:text-primary transition-colors">
                       {authorProfile?.display_name || 'Unknown Author'}
-                    </p>
+                    </h3>
                     <p className="text-sm text-muted-foreground font-mono">
                       @{authorProfile?.username || 'unknown'}
                     </p>
-                  </div>
-                </Link>
-                <p className="text-sm text-muted-foreground mb-4">
+                  </Link>
+                </div>
+                <p className="text-sm text-muted-foreground text-center mb-6 line-clamp-3">
                   {authorProfile?.bio || 'No bio available'}
                 </p>
                 <Button className="w-full" size="sm">
@@ -418,12 +477,15 @@ const Article = () => {
 
               {/* Related Posts */}
               {relatedPosts && relatedPosts.length > 0 && (
-                <div className="glass-card rounded-xl p-5">
-                  <h3 className="font-semibold mb-4">Related Posts</h3>
+                <div className="rounded-2xl border border-border bg-card p-6">
+                  <h3 className="font-bold mb-4 flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4" />
+                    More to Read
+                  </h3>
                   <div className="space-y-4">
                     {relatedPosts.map((relatedPost: any) => {
                       const relatedProfile = relatedPost.authorProfile;
-                      const readTime = `${Math.ceil(5 + Math.random() * 10)} min read`;
+                      const readTime = `${Math.ceil(5 + Math.random() * 10)} min`;
                       
                       return (
                         <Link
@@ -431,14 +493,18 @@ const Article = () => {
                           to={`/article/${relatedPost.id}`}
                           className="block group"
                         >
-                          <div className="flex items-start gap-3">
-                            <img
-                              src={relatedProfile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${relatedPost.id}`}
-                              alt={relatedProfile?.display_name || 'Author'}
-                              className="w-8 h-8 rounded-full border border-border flex-shrink-0"
-                            />
+                          <div className="flex items-start gap-3 p-3 -mx-3 rounded-lg hover:bg-muted/50 transition-colors">
+                            <Avatar className="w-8 h-8 border border-border flex-shrink-0">
+                              <AvatarImage 
+                                src={relatedProfile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${relatedPost.id}`}
+                                alt={relatedProfile?.display_name || 'Author'}
+                              />
+                              <AvatarFallback>
+                                <User className="w-3 h-3" />
+                              </AvatarFallback>
+                            </Avatar>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium leading-tight group-hover:text-primary transition-colors line-clamp-2">
+                              <p className="text-sm font-medium leading-snug group-hover:text-primary transition-colors line-clamp-2">
                                 {relatedPost.title}
                               </p>
                               <p className="text-xs text-muted-foreground mt-1">
@@ -453,15 +519,15 @@ const Article = () => {
                 </div>
               )}
 
-              {/* Tags */}
+              {/* Topics */}
               {post.tags && post.tags.length > 0 && (
-                <div className="glass-card rounded-xl p-5">
-                  <h3 className="font-semibold mb-4">Topics</h3>
+                <div className="rounded-2xl border border-border bg-card p-6">
+                  <h3 className="font-bold mb-4">Topics</h3>
                   <div className="flex flex-wrap gap-2">
                     {post.tags.map((tag: string) => (
                       <span
                         key={tag}
-                        className="px-3 py-1.5 text-sm rounded-full bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors cursor-pointer"
+                        className="px-3 py-1.5 text-sm rounded-full bg-muted text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
                       >
                         #{tag}
                       </span>
