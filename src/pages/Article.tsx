@@ -14,7 +14,8 @@ import {
   Calendar,
   Clock,
   Send,
-  Loader2
+  Loader2,
+  Edit
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ParticleBackground from '@/components/ParticleBackground';
@@ -218,7 +219,7 @@ const Article = () => {
                     </div>
                   </Link>
 
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground ml-auto">
+                <div className="flex items-center gap-4 text-sm text-muted-foreground ml-auto">
                     <span className="flex items-center gap-1.5">
                       <Calendar className="w-4 h-4" />
                       {format(new Date(post.created_at), 'MMMM d, yyyy')}
@@ -227,6 +228,14 @@ const Article = () => {
                       <Clock className="w-4 h-4" />
                       {calculateReadTime(post.content)}
                     </span>
+                    {user && user.id === post.user_id && (
+                      <Link to={`/create?edit=${post.id}`}>
+                        <Button variant="outline" size="sm" className="gap-1.5">
+                          <Edit className="w-4 h-4" />
+                          Edit
+                        </Button>
+                      </Link>
+                    )}
                   </div>
                 </div>
               </div>
