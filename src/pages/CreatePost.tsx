@@ -49,6 +49,7 @@ const CreatePost = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const draftId = searchParams.get('draft');
+  const editId = searchParams.get('edit');
   const { toast } = useToast();
   const { user, loading } = useAuth();
   const [contentType, setContentType] = useState('post');
@@ -61,27 +62,28 @@ const CreatePost = () => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('general');
-  const [currentDraftId, setCurrentDraftId] = useState<string | null>(draftId);
+  const [currentPostId, setCurrentPostId] = useState<string | null>(draftId || editId);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load draft if editing
+  // Load draft or published post if editing
   useEffect(() => {
-    const loadDraft = async () => {
-      if (!draftId || !user) return;
+    const loadPost = async () => {
+      const postId = draftId || editId;
+      if (!postId || !user) return;
 
       const { data, error } = await supabase
         .from('posts')
         .select('*')
-        .eq('id', draftId)
+        .eq('id', postId)
         .eq('user_id', user.id)
-        .eq('status', 'draft')
         .maybeSingle();
 
       if (error || !data) {
         toast({
-          title: 'Draft not found',
-          description: 'The draft you are looking for does not exist.',
+          title: 'Post not found',
+          description: 'The post you are looking for does not exist or you do not have permission to edit it.',
           variant: 'destructive',
         });
         navigate('/create');
@@ -94,11 +96,12 @@ const CreatePost = () => {
       setVideoUrl(data.video_url || '');
       setSelectedTags(data.tags || []);
       setSelectedCategory(data.category || 'general');
-      setCurrentDraftId(data.id);
+      setCurrentPostId(data.id);
+      setIsEditMode(data.status === 'published');
     };
 
-    loadDraft();
-  }, [draftId, user, navigate, toast]);
+    loadPost();
+  }, [draftId, editId, user, navigate, toast]);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -290,7 +293,7 @@ const CreatePost = () => {
     setIsSavingDraft(true);
 
     try {
-      if (currentDraftId) {
+      if (currentPostId && !isEditMode) {
         // Update existing draft
         const { error } = await supabase
           .from('posts')
@@ -303,10 +306,10 @@ const CreatePost = () => {
             category: selectedCategory,
             status: 'draft',
           })
-          .eq('id', currentDraftId);
+          .eq('id', currentPostId);
 
         if (error) throw error;
-      } else {
+      } else if (!isEditMode) {
         // Create new draft
         const { data, error } = await supabase
           .from('posts')
@@ -324,7 +327,7 @@ const CreatePost = () => {
           .single();
 
         if (error) throw error;
-        setCurrentDraftId(data.id);
+        setCurrentPostId(data.id);
       }
 
       toast({
@@ -384,8 +387,8 @@ const CreatePost = () => {
     setIsPublishing(true);
 
     try {
-      if (currentDraftId) {
-        // Update draft to published
+      if (currentPostId) {
+        // Update existing post (draft or published)
         const { error } = await supabase
           .from('posts')
           .update({
@@ -397,7 +400,7 @@ const CreatePost = () => {
             category: selectedCategory,
             status: 'published',
           })
-          .eq('id', currentDraftId);
+          .eq('id', currentPostId);
 
         if (error) throw error;
       } else {
@@ -417,11 +420,11 @@ const CreatePost = () => {
       }
 
       toast({
-        title: "Post published!",
-        description: "Your post is now live and visible to the community.",
+        title: isEditMode ? "Post updated!" : "Post published!",
+        description: isEditMode ? "Your post has been updated successfully." : "Your post is now live and visible to the community.",
       });
 
-      navigate('/');
+      navigate(currentPostId ? `/article/${currentPostId}` : '/');
     } catch (error: any) {
       console.error('Error publishing post:', error);
       toast({
@@ -471,8 +474,8 @@ const CreatePost = () => {
             transition={{ duration: 0.5 }}
             className="mb-8"
           >
-            <h1 className="text-3xl font-bold mb-2">Create New Content</h1>
-            <p className="text-muted-foreground">Share your knowledge with the community</p>
+            <h1 className="text-3xl font-bold mb-2">{isEditMode ? 'Edit Post' : 'Create New Content'}</h1>
+            <p className="text-muted-foreground">{isEditMode ? 'Update your published post' : 'Share your knowledge with the community'}</p>
           </motion.div>
 
           {/* Content Type Selection */}
@@ -795,9 +798,9 @@ const CreatePost = () => {
               <p className="text-sm text-muted-foreground">
                 {content.length} characters · {content.split(/\s+/).filter(Boolean).length} words
               </p>
-              {currentDraftId && (
+              {currentPostId && (
                 <span className="text-xs px-2 py-1 rounded-full bg-secondary text-muted-foreground">
-                  Editing draft
+                  {isEditMode ? 'Editing published post' : 'Editing draft'}
                 </span>
               )}
             </div>
