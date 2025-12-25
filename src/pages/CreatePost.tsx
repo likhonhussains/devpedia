@@ -62,46 +62,58 @@ const CreatePost = () => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('general');
-  const [currentPostId, setCurrentPostId] = useState<string | null>(draftId || editId);
+  const [currentPostId, setCurrentPostId] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isLoadingPost, setIsLoadingPost] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load draft or published post if editing
   useEffect(() => {
     const loadPost = async () => {
       const postId = draftId || editId;
-      if (!postId || !user) return;
+      if (!postId) return;
+      if (!user) return;
 
-      const { data, error } = await supabase
-        .from('posts')
-        .select('*')
-        .eq('id', postId)
-        .eq('user_id', user.id)
-        .maybeSingle();
+      setIsLoadingPost(true);
 
-      if (error || !data) {
-        toast({
-          title: 'Post not found',
-          description: 'The post you are looking for does not exist or you do not have permission to edit it.',
-          variant: 'destructive',
-        });
-        navigate('/create');
-        return;
+      try {
+        const { data, error } = await supabase
+          .from('posts')
+          .select('*')
+          .eq('id', postId)
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (error || !data) {
+          toast({
+            title: 'Post not found',
+            description: 'The post you are looking for does not exist or you do not have permission to edit it.',
+            variant: 'destructive',
+          });
+          navigate('/create');
+          return;
+        }
+
+        setContentType(data.type);
+        setTitle(data.title);
+        setContent(data.content);
+        setVideoUrl(data.video_url || '');
+        setSelectedTags(data.tags || []);
+        setSelectedCategory(data.category || 'general');
+        setCurrentPostId(data.id);
+        setIsEditMode(data.status === 'published');
+      } catch (err) {
+        console.error('Error loading post:', err);
+      } finally {
+        setIsLoadingPost(false);
       }
-
-      setContentType(data.type);
-      setTitle(data.title);
-      setContent(data.content);
-      setVideoUrl(data.video_url || '');
-      setSelectedTags(data.tags || []);
-      setSelectedCategory(data.category || 'general');
-      setCurrentPostId(data.id);
-      setIsEditMode(data.status === 'published');
     };
 
-    loadPost();
-  }, [draftId, editId, user, navigate, toast]);
+    if (!loading) {
+      loadPost();
+    }
+  }, [draftId, editId, user, loading, navigate, toast]);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -437,7 +449,7 @@ const CreatePost = () => {
     }
   };
 
-  if (loading) {
+  if (loading || isLoadingPost) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
