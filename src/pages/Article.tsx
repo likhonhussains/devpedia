@@ -534,7 +534,7 @@ const Article = () => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.4 }}
-              className="space-y-6 lg:sticky lg:top-24 lg:self-start"
+              className="space-y-6 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:scrollbar-hide"
             >
               {/* Author Card */}
               <div className="rounded-2xl border border-border bg-card p-6">
