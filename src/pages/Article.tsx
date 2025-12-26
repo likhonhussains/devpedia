@@ -263,9 +263,113 @@ const Article = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
             >
-              {/* Content Body */}
-              <div className="prose prose-lg max-w-none dark:prose-invert prose-headings:font-bold prose-headings:tracking-tight prose-h2:text-2xl prose-h3:text-xl prose-p:text-foreground/85 prose-p:leading-relaxed prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-strong:text-foreground prose-code:text-primary prose-code:bg-secondary prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-mono prose-code:text-sm prose-pre:bg-secondary prose-pre:border prose-pre:border-border prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:not-italic prose-table:border-collapse prose-th:border prose-th:border-border prose-th:bg-secondary prose-th:p-3 prose-td:border prose-td:border-border prose-td:p-3 prose-img:rounded-xl prose-hr:border-border">
-                <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+              {/* Featured Image - Extract first image from content */}
+              {(() => {
+                const imageMatch = post.content.match(/!\[.*?\]\((.*?)\)/);
+                const featuredImage = imageMatch ? imageMatch[1] : null;
+                return featuredImage ? (
+                  <div className="mb-8 -mx-4 sm:mx-0">
+                    <img 
+                      src={featuredImage} 
+                      alt="Featured"
+                      className="w-full h-auto max-h-[500px] object-cover rounded-none sm:rounded-2xl"
+                    />
+                  </div>
+                ) : null;
+              })()}
+
+              {/* Content Body - Facebook-style clean layout */}
+              <div className="post-content space-y-0">
+                <ReactMarkdown 
+                  remarkPlugins={[remarkGfm, remarkBreaks]}
+                  components={{
+                    p: ({ children }) => (
+                      <p className="text-base sm:text-lg leading-relaxed text-foreground/90 mb-4 whitespace-pre-wrap">
+                        {children}
+                      </p>
+                    ),
+                    h1: ({ children }) => (
+                      <h1 className="text-2xl sm:text-3xl font-bold text-foreground mt-8 mb-4">
+                        {children}
+                      </h1>
+                    ),
+                    h2: ({ children }) => (
+                      <h2 className="text-xl sm:text-2xl font-bold text-foreground mt-6 mb-3">
+                        {children}
+                      </h2>
+                    ),
+                    h3: ({ children }) => (
+                      <h3 className="text-lg sm:text-xl font-semibold text-foreground mt-5 mb-2">
+                        {children}
+                      </h3>
+                    ),
+                    ul: ({ children }) => (
+                      <ul className="list-disc list-inside space-y-2 my-4 text-foreground/90">
+                        {children}
+                      </ul>
+                    ),
+                    ol: ({ children }) => (
+                      <ol className="list-decimal list-inside space-y-2 my-4 text-foreground/90">
+                        {children}
+                      </ol>
+                    ),
+                    li: ({ children }) => (
+                      <li className="text-base sm:text-lg leading-relaxed">
+                        {children}
+                      </li>
+                    ),
+                    blockquote: ({ children }) => (
+                      <blockquote className="border-l-4 border-primary bg-muted/50 px-4 py-3 my-4 rounded-r-lg">
+                        {children}
+                      </blockquote>
+                    ),
+                    code: ({ className, children }) => {
+                      const isBlock = className?.includes('language-');
+                      if (isBlock) {
+                        return (
+                          <code className={`${className} block bg-secondary border border-border rounded-lg p-4 my-4 overflow-x-auto text-sm font-mono`}>
+                            {children}
+                          </code>
+                        );
+                      }
+                      return (
+                        <code className="bg-secondary text-primary px-1.5 py-0.5 rounded text-sm font-mono">
+                          {children}
+                        </code>
+                      );
+                    },
+                    pre: ({ children }) => (
+                      <pre className="bg-secondary border border-border rounded-lg p-4 my-4 overflow-x-auto">
+                        {children}
+                      </pre>
+                    ),
+                    a: ({ href, children }) => (
+                      <a href={href} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+                        {children}
+                      </a>
+                    ),
+                    img: ({ src, alt }) => (
+                      <img 
+                        src={src} 
+                        alt={alt || 'Image'} 
+                        className="w-full h-auto rounded-xl my-6 max-h-[600px] object-cover"
+                      />
+                    ),
+                    hr: () => (
+                      <hr className="my-8 border-border" />
+                    ),
+                    strong: ({ children }) => (
+                      <strong className="font-semibold text-foreground">
+                        {children}
+                      </strong>
+                    ),
+                    em: ({ children }) => (
+                      <em className="italic">
+                        {children}
+                      </em>
+                    ),
+                  }}
+                >
                   {post.content}
                 </ReactMarkdown>
               </div>
