@@ -174,23 +174,14 @@ const Article = () => {
               <span>Back to feed</span>
             </Link>
 
-            {/* Category & Tags */}
-            <div className="flex flex-wrap items-center gap-2 mb-4">
-              {post.category && (
+            {/* Category */}
+            {post.category && (
+              <div className="mb-4">
                 <span className="px-3 py-1 text-xs font-medium rounded-full bg-primary text-primary-foreground">
                   {post.category}
                 </span>
-              )}
-              {post.tags && post.tags.slice(0, 3).map((tag: string) => (
-                <span
-                  key={tag}
-                  className="px-3 py-1 text-xs rounded-full bg-secondary text-secondary-foreground font-mono"
-                >
-                  #{tag}
-                </span>
-              ))}
-            </div>
-
+              </div>
+            )}
             {/* Title */}
             <motion.h1 
               initial={{ opacity: 0, y: 20 }}
