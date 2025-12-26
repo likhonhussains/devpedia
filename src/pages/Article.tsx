@@ -275,48 +275,65 @@ const Article = () => {
                       </div>
                     )}
 
-                    {/* Content Body - Facebook-style clean layout */}
-                    <div className="post-content space-y-0">
+                    {/* Content Body - Clean professional layout */}
+                    <div className="post-content">
                       <ReactMarkdown 
                         remarkPlugins={[remarkGfm, remarkBreaks]}
                         components={{
-                          p: ({ children }) => (
-                            <p className="text-base sm:text-lg leading-relaxed text-foreground/90 mb-4 whitespace-pre-wrap">
-                              {children}
-                            </p>
-                          ),
+                          p: ({ children }) => {
+                            // Check if paragraph only contains an image
+                            const childArray = Array.isArray(children) ? children : [children];
+                            const hasOnlyImage = childArray.length === 1 && 
+                              typeof childArray[0] === 'object' && 
+                              childArray[0]?.type === 'img';
+                            
+                            if (hasOnlyImage) {
+                              return <>{children}</>;
+                            }
+                            
+                            return (
+                              <p className="text-[17px] leading-[1.8] text-foreground/90 mb-5 tracking-wide">
+                                {children}
+                              </p>
+                            );
+                          },
                           h1: ({ children }) => (
-                            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mt-8 mb-4">
+                            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mt-10 mb-5 leading-tight">
                               {children}
                             </h1>
                           ),
                           h2: ({ children }) => (
-                            <h2 className="text-xl sm:text-2xl font-bold text-foreground mt-6 mb-3">
+                            <h2 className="text-xl sm:text-2xl font-bold text-foreground mt-8 mb-4 leading-tight border-b border-border pb-2">
                               {children}
                             </h2>
                           ),
                           h3: ({ children }) => (
-                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mt-5 mb-2">
+                            <h3 className="text-lg sm:text-xl font-semibold text-foreground mt-6 mb-3 leading-tight">
                               {children}
                             </h3>
                           ),
+                          h4: ({ children }) => (
+                            <h4 className="text-base sm:text-lg font-semibold text-foreground mt-5 mb-2">
+                              {children}
+                            </h4>
+                          ),
                           ul: ({ children }) => (
-                            <ul className="list-disc list-inside space-y-2 my-4 text-foreground/90">
+                            <ul className="list-none space-y-3 my-5 pl-0">
                               {children}
                             </ul>
                           ),
                           ol: ({ children }) => (
-                            <ol className="list-decimal list-inside space-y-2 my-4 text-foreground/90">
+                            <ol className="list-decimal space-y-3 my-5 pl-6 marker:text-primary marker:font-semibold">
                               {children}
                             </ol>
                           ),
                           li: ({ children }) => (
-                            <li className="text-base sm:text-lg leading-relaxed">
+                            <li className="text-[17px] leading-[1.7] text-foreground/90 pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-primary before:font-bold">
                               {children}
                             </li>
                           ),
                           blockquote: ({ children }) => (
-                            <blockquote className="border-l-4 border-primary bg-muted/50 px-4 py-3 my-4 rounded-r-lg">
+                            <blockquote className="border-l-4 border-primary bg-muted/30 px-5 py-4 my-6 rounded-r-lg italic text-foreground/80">
                               {children}
                             </blockquote>
                           ),
@@ -324,46 +341,80 @@ const Article = () => {
                             const isBlock = className?.includes('language-');
                             if (isBlock) {
                               return (
-                                <code className={`${className} block bg-secondary border border-border rounded-lg p-4 my-4 overflow-x-auto text-sm font-mono`}>
+                                <code className={`${className} block bg-secondary/80 border border-border rounded-lg p-5 my-5 overflow-x-auto text-sm font-mono leading-relaxed`}>
                                   {children}
                                 </code>
                               );
                             }
                             return (
-                              <code className="bg-secondary text-primary px-1.5 py-0.5 rounded text-sm font-mono">
+                              <code className="bg-secondary/80 text-primary px-2 py-1 rounded text-[15px] font-mono mx-0.5">
                                 {children}
                               </code>
                             );
                           },
                           pre: ({ children }) => (
-                            <pre className="bg-secondary border border-border rounded-lg p-4 my-4 overflow-x-auto">
+                            <pre className="bg-secondary/80 border border-border rounded-lg p-5 my-5 overflow-x-auto text-sm">
                               {children}
                             </pre>
                           ),
                           a: ({ href, children }) => (
-                            <a href={href} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+                            <a 
+                              href={href} 
+                              className="text-primary font-medium hover:underline underline-offset-2 transition-colors" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                            >
                               {children}
                             </a>
                           ),
                           img: ({ src, alt }) => (
-                            <img 
-                              src={src} 
-                              alt={alt || 'Image'} 
-                              className="w-full h-auto rounded-xl my-6 max-h-[600px] object-cover"
-                            />
+                            <figure className="my-8">
+                              <img 
+                                src={src} 
+                                alt={alt || 'Image'} 
+                                className="w-full h-auto rounded-xl max-h-[600px] object-cover shadow-sm"
+                              />
+                              {alt && alt !== 'Image' && (
+                                <figcaption className="text-center text-sm text-muted-foreground mt-3 italic">
+                                  {alt}
+                                </figcaption>
+                              )}
+                            </figure>
                           ),
                           hr: () => (
-                            <hr className="my-8 border-border" />
+                            <hr className="my-10 border-border" />
                           ),
                           strong: ({ children }) => (
-                            <strong className="font-semibold text-foreground">
+                            <strong className="font-bold text-foreground">
                               {children}
                             </strong>
                           ),
                           em: ({ children }) => (
-                            <em className="italic">
+                            <em className="italic text-foreground/85">
                               {children}
                             </em>
+                          ),
+                          table: ({ children }) => (
+                            <div className="overflow-x-auto my-6">
+                              <table className="w-full border-collapse border border-border rounded-lg overflow-hidden">
+                                {children}
+                              </table>
+                            </div>
+                          ),
+                          thead: ({ children }) => (
+                            <thead className="bg-muted/50">
+                              {children}
+                            </thead>
+                          ),
+                          th: ({ children }) => (
+                            <th className="border border-border px-4 py-3 text-left font-semibold text-foreground">
+                              {children}
+                            </th>
+                          ),
+                          td: ({ children }) => (
+                            <td className="border border-border px-4 py-3 text-foreground/90">
+                              {children}
+                            </td>
                           ),
                         }}
                       >
