@@ -65,7 +65,7 @@ export const showBrowserNotification = ({ title, body, icon, tag, onClick }: Not
 };
 
 export const formatNotificationContent = (
-  type: 'like' | 'comment' | 'follow' | 'message' | 'mention' | 'badge',
+  type: 'like' | 'comment' | 'follow' | 'message' | 'mention' | 'badge' | 'group_post',
   actorName: string,
   postTitle?: string,
   badgeName?: string
@@ -100,6 +100,11 @@ export const formatNotificationContent = (
       return {
         title: '🏆 Achievement Unlocked!',
         body: badgeName ? `You earned the "${badgeName}" badge!` : 'You earned a new badge!',
+      };
+    case 'group_post':
+      return {
+        title: 'New Group Post',
+        body: `${actorName} posted in a group you're a member of`,
       };
     default:
       return {
