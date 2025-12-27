@@ -21,6 +21,29 @@ interface ContentCardProps {
   tags?: string[];
 }
 
+// Extract first image URL from markdown content
+const extractFirstImage = (content: string): string | null => {
+  // Match markdown image syntax: ![alt](url)
+  const markdownImageRegex = /!\[.*?\]\((https?:\/\/[^\s)]+)\)/;
+  const match = content.match(markdownImageRegex);
+  if (match) return match[1];
+  
+  // Match plain URLs that look like images
+  const urlRegex = /(https?:\/\/[^\s]+\.(?:jpg|jpeg|png|gif|webp))/i;
+  const urlMatch = content.match(urlRegex);
+  if (urlMatch) return urlMatch[1];
+  
+  return null;
+};
+
+// Strip markdown image syntax from content for preview text
+const stripMarkdownImages = (content: string): string => {
+  return content
+    .replace(/!\[.*?\]\([^)]+\)/g, '') // Remove markdown images
+    .replace(/\n+/g, ' ') // Replace newlines with spaces
+    .trim();
+};
+
 const ContentCard = ({
   id,
   type,
@@ -42,12 +65,34 @@ const ContentCard = ({
     trackRead(id);
   };
 
+  // Extract image from content if no thumbnail provided
+  const contentImage = extractFirstImage(content);
+  const displayImage = thumbnail || contentImage;
+  const cleanContent = stripMarkdownImages(content);
+
   return (
     <motion.article
       whileHover={{ y: -2 }}
       transition={{ duration: 0.2 }}
       className="group rounded-xl bg-card border border-border/50 p-5 transition-all duration-300 hover:border-border hover:shadow-elevated"
     >
+      {/* Content Image */}
+      {displayImage && type !== 'video' && (
+        <Link to={`/article/${id}`} onClick={handleClick} className="block mb-4">
+          <div className="rounded-lg overflow-hidden">
+            <img
+              src={displayImage}
+              alt={title}
+              className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
+              onError={(e) => {
+                // Hide broken images
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          </div>
+        </Link>
+      )}
+
       {/* Video Thumbnail */}
       {type === 'video' && thumbnail && (
         <div className="relative mb-4 rounded-lg overflow-hidden">
@@ -98,7 +143,7 @@ const ContentCard = ({
           {title}
         </h3>
       </Link>
-      <p className="text-muted-foreground text-sm leading-relaxed mb-4 line-clamp-2">{content}</p>
+      <p className="text-muted-foreground text-sm leading-relaxed mb-4 line-clamp-2">{cleanContent}</p>
 
       {/* Tags */}
       {tags.length > 0 && (
