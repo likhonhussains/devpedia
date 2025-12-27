@@ -644,6 +644,10 @@ export type Database = {
         Args: { p_group_id: string; p_user_id: string }
         Returns: boolean
       }
+      is_group_admin_or_moderator: {
+        Args: { p_group_id: string; p_user_id: string }
+        Returns: boolean
+      }
       is_group_member: {
         Args: { p_group_id: string; p_user_id: string }
         Returns: boolean
