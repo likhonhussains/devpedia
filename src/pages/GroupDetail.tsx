@@ -11,9 +11,10 @@ import {
   MessageSquare,
   Plus,
   UserPlus,
-  Settings,
   Heart,
-  User
+  User,
+  Search,
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,8 +40,9 @@ import {
 } from '@/components/ui/sheet';
 import Header from '@/components/Header';
 import ParticleBackground from '@/components/ParticleBackground';
-import { useGroup, useGroups, GroupPost } from '@/hooks/useGroups';
+import { useGroup, useGroups, GroupPost, GroupMember } from '@/hooks/useGroups';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const PostCard = ({ post }: { post: GroupPost }) => {
   return (
@@ -167,6 +169,153 @@ const CreatePostDialog = ({ groupId }: { groupId: string }) => {
             </Button>
           </div>
         </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+interface UserSearchResult {
+  user_id: string;
+  display_name: string;
+  username: string;
+  avatar_url: string | null;
+}
+
+const InviteMemberDialog = ({ groupId, members }: { groupId: string; members: GroupMember[] }) => {
+  const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const { addMember, isAddingMember } = useGroup(groupId);
+
+  const memberUserIds = new Set(members?.map(m => m.user_id) || []);
+
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    
+    if (query.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, username, avatar_url')
+        .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
+        .limit(10);
+
+      if (error) throw error;
+      
+      // Filter out existing members
+      const filteredResults = (data || []).filter(
+        user => !memberUserIds.has(user.user_id)
+      );
+      
+      setSearchResults(filteredResults);
+    } catch (error) {
+      console.error('Search error:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleInvite = (userId: string) => {
+    addMember(userId, {
+      onSuccess: () => {
+        setSearchResults(prev => prev.filter(u => u.user_id !== userId));
+      }
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-2 bg-white/10 border-white/20">
+          <UserPlus className="w-4 h-4" />
+          Invite
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="bg-background/95 backdrop-blur-xl border-white/20">
+        <DialogHeader>
+          <DialogTitle>Invite Members</DialogTitle>
+          <DialogDescription>
+            Search for users by username or name to invite them
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="mt-4 space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder="Search by username or name..."
+              className="pl-10 bg-white/5 border-white/20"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => { setSearchQuery(''); setSearchResults([]); }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          <div className="max-h-64 overflow-y-auto space-y-2">
+            {isSearching ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : searchResults.length > 0 ? (
+              searchResults.map((user) => (
+                <div
+                  key={user.user_id}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-white/5 border border-white/10"
+                >
+                  <Avatar className="w-10 h-10 border border-white/20">
+                    <AvatarImage 
+                      src={user.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.user_id}`}
+                      alt={user.display_name}
+                    />
+                    <AvatarFallback>
+                      <User className="w-4 h-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">
+                      {user.display_name}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      @{user.username}
+                    </p>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    onClick={() => handleInvite(user.user_id)}
+                    disabled={isAddingMember}
+                  >
+                    {isAddingMember ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      'Add'
+                    )}
+                  </Button>
+                </div>
+              ))
+            ) : searchQuery.length >= 2 ? (
+              <p className="text-center text-muted-foreground py-8">
+                No users found
+              </p>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">
+                Type at least 2 characters to search
+              </p>
+            )}
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -358,6 +507,7 @@ const GroupDetail = () => {
 
               <div className="flex items-center gap-2 flex-wrap">
                 <MembersSheet groupId={id!} />
+                {isAdmin && <InviteMemberDialog groupId={id!} members={members || []} />}
                 
                 {user && (
                   isMember ? (
