@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
@@ -18,12 +18,15 @@ import {
   X,
   Shield,
   Crown,
-  ChevronDown
+  ChevronDown,
+  Settings,
+  ImagePlus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -50,9 +53,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import Header from '@/components/Header';
 import ParticleBackground from '@/components/ParticleBackground';
-import { useGroup, useGroups, GroupPost, GroupMember } from '@/hooks/useGroups';
+import { useGroup, useGroups, GroupPost, GroupMember, Group } from '@/hooks/useGroups';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface PostCardProps {
   post: GroupPost;
@@ -504,6 +508,246 @@ const MembersSheet = ({ groupId, isAdmin, currentUserId }: { groupId: string; is
   );
 };
 
+// Edit Group Dialog
+const EditGroupDialog = ({ group, groupId }: { group: Group; groupId: string }) => {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(group.name);
+  const [description, setDescription] = useState(group.description || '');
+  const [privacy, setPrivacy] = useState<'public' | 'private'>(group.privacy);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(group.avatar_url);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(group.cover_url);
+  const [uploading, setUploading] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const { updateGroup, isUpdatingGroup } = useGroup(groupId);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setAvatarPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setCoverFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setCoverPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadImage = async (file: File, type: 'avatar' | 'cover'): Promise<string | undefined> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${type}-${groupId}-${Date.now()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('group-images')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      toast.error(`Failed to upload ${type}: ${uploadError.message}`);
+      return undefined;
+    }
+
+    const { data } = supabase.storage.from('group-images').getPublicUrl(filePath);
+    return data.publicUrl;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    
+    setUploading(true);
+    let avatarUrl: string | undefined = group.avatar_url || undefined;
+    let coverUrl: string | undefined = group.cover_url || undefined;
+
+    try {
+      if (avatarFile) {
+        avatarUrl = await uploadImage(avatarFile, 'avatar');
+      }
+      if (coverFile) {
+        coverUrl = await uploadImage(coverFile, 'cover');
+      }
+
+      updateGroup(
+        { name, description, privacy, avatarUrl, coverUrl },
+        {
+          onSuccess: () => {
+            setOpen(false);
+          },
+        }
+      );
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const isLoading = isUpdatingGroup || uploading;
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-2 bg-white/10 border-white/20">
+          <Settings className="w-4 h-4" />
+          Edit Group
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="bg-background/95 backdrop-blur-xl border-white/20 max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Edit Group</DialogTitle>
+          <DialogDescription>
+            Update your group settings and appearance
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          {/* Cover Image Upload */}
+          <div className="space-y-2">
+            <Label>Cover Image</Label>
+            <div 
+              className="relative h-32 rounded-lg overflow-hidden bg-gradient-to-br from-primary/30 to-primary/10 cursor-pointer group"
+              onClick={() => coverInputRef.current?.click()}
+            >
+              {coverPreview ? (
+                <>
+                  <img src={coverPreview} alt="Cover" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCoverFile(null);
+                      setCoverPreview(null);
+                    }}
+                    className="absolute top-2 right-2 p-1 rounded-full bg-black/50 text-white hover:bg-black/70"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </>
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground group-hover:text-foreground transition-colors">
+                  <div className="text-center">
+                    <ImagePlus className="w-8 h-8 mx-auto mb-1" />
+                    <span className="text-sm">Add cover image</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            <input
+              ref={coverInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleCoverChange}
+              className="hidden"
+            />
+          </div>
+
+          {/* Avatar Image Upload */}
+          <div className="space-y-2">
+            <Label>Group Avatar</Label>
+            <div className="flex items-center gap-4">
+              <div 
+                className="relative w-20 h-20 rounded-full overflow-hidden bg-primary/20 cursor-pointer group"
+                onClick={() => avatarInputRef.current?.click()}
+              >
+                {avatarPreview ? (
+                  <>
+                    <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setAvatarFile(null);
+                        setAvatarPreview(null);
+                      }}
+                      className="absolute top-0 right-0 p-1 rounded-full bg-black/50 text-white hover:bg-black/70"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </>
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground group-hover:text-foreground transition-colors">
+                    <ImagePlus className="w-6 h-6" />
+                  </div>
+                )}
+              </div>
+              <span className="text-sm text-muted-foreground">Click to change group avatar</span>
+            </div>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              className="hidden"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-name">Group Name</Label>
+            <Input
+              id="edit-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter group name"
+              className="bg-white/5 border-white/20"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-description">Description</Label>
+            <Textarea
+              id="edit-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="What's your group about?"
+              className="bg-white/5 border-white/20 resize-none"
+              rows={3}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Privacy</Label>
+            <RadioGroup value={privacy} onValueChange={(v) => setPrivacy(v as 'public' | 'private')}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="public" id="edit-public" />
+                <Label htmlFor="edit-public" className="flex items-center gap-2 cursor-pointer">
+                  <Globe className="w-4 h-4" />
+                  Public - Anyone can see and join
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="private" id="edit-private" />
+                <Label htmlFor="edit-private" className="flex items-center gap-2 cursor-pointer">
+                  <Lock className="w-4 h-4" />
+                  Private - Only members can see content
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isLoading || !name.trim()}>
+              {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Save Changes
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const GroupDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -630,6 +874,7 @@ const GroupDetail = () => {
               <div className="flex items-center gap-2 flex-wrap">
                 <MembersSheet groupId={id!} isAdmin={isAdmin} currentUserId={user?.id} />
                 {isAdmin && <InviteMemberDialog groupId={id!} members={members || []} />}
+                {isAdmin && <EditGroupDialog group={group} groupId={id!} />}
                 
                 {user && (
                   isMember ? (

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { 
@@ -8,7 +8,9 @@ import {
   Globe, 
   Loader2,
   Search,
-  MessageSquare
+  MessageSquare,
+  ImagePlus,
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +30,8 @@ import Header from '@/components/Header';
 import ParticleBackground from '@/components/ParticleBackground';
 import { useGroups, Group } from '@/hooks/useGroups';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const GroupCard = ({ group, isMember }: { group: Group; isMember?: boolean }) => {
   const { joinGroup, isJoining, leaveGroup, isLeaving } = useGroups();
@@ -61,10 +65,20 @@ const GroupCard = ({ group, isMember }: { group: Group; isMember?: boolean }) =>
             </span>
           )}
         </div>
+        {/* Group Avatar */}
+        {group.avatar_url && (
+          <div className="absolute -bottom-6 left-4">
+            <img 
+              src={group.avatar_url} 
+              alt={group.name}
+              className="w-14 h-14 rounded-full border-2 border-card object-cover"
+            />
+          </div>
+        )}
       </div>
 
       {/* Content */}
-      <div className="p-5">
+      <div className={`p-5 ${group.avatar_url ? 'pt-8' : ''}`}>
         <Link to={`/groups/${group.id}`}>
           <h3 className="text-lg font-bold mb-2 group-hover:text-primary transition-colors line-clamp-1">
             {group.name}
@@ -119,34 +133,107 @@ const CreateGroupDialog = () => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [privacy, setPrivacy] = useState<'public' | 'private'>('public');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const { createGroup, isCreating } = useGroups();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setAvatarPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setCoverFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setCoverPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadImage = async (file: File, type: 'avatar' | 'cover'): Promise<string | undefined> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${type}-${Date.now()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('group-images')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      toast.error(`Failed to upload ${type}: ${uploadError.message}`);
+      return undefined;
+    }
+
+    const { data } = supabase.storage.from('group-images').getPublicUrl(filePath);
+    return data.publicUrl;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
     
-    createGroup(
-      { name, description, privacy },
-      {
-        onSuccess: () => {
-          setOpen(false);
-          setName('');
-          setDescription('');
-          setPrivacy('public');
-        },
+    setUploading(true);
+    let avatarUrl: string | undefined;
+    let coverUrl: string | undefined;
+
+    try {
+      if (avatarFile) {
+        avatarUrl = await uploadImage(avatarFile, 'avatar');
       }
-    );
+      if (coverFile) {
+        coverUrl = await uploadImage(coverFile, 'cover');
+      }
+
+      createGroup(
+        { name, description, privacy, avatarUrl, coverUrl },
+        {
+          onSuccess: () => {
+            setOpen(false);
+            resetForm();
+          },
+        }
+      );
+    } finally {
+      setUploading(false);
+    }
   };
 
+  const resetForm = () => {
+    setName('');
+    setDescription('');
+    setPrivacy('public');
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    setCoverFile(null);
+    setCoverPreview(null);
+  };
+
+  const isLoading = isCreating || uploading;
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      setOpen(isOpen);
+      if (!isOpen) resetForm();
+    }}>
       <DialogTrigger asChild>
         <Button className="gap-2">
           <Plus className="w-4 h-4" />
           Create Group
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-background/95 backdrop-blur-xl border-white/20">
+      <DialogContent className="bg-background/95 backdrop-blur-xl border-white/20 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Group</DialogTitle>
           <DialogDescription>
@@ -155,6 +242,86 @@ const CreateGroupDialog = () => {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          {/* Cover Image Upload */}
+          <div className="space-y-2">
+            <Label>Cover Image</Label>
+            <div 
+              className="relative h-32 rounded-lg overflow-hidden bg-gradient-to-br from-primary/30 to-primary/10 cursor-pointer group"
+              onClick={() => coverInputRef.current?.click()}
+            >
+              {coverPreview ? (
+                <>
+                  <img src={coverPreview} alt="Cover" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCoverFile(null);
+                      setCoverPreview(null);
+                    }}
+                    className="absolute top-2 right-2 p-1 rounded-full bg-black/50 text-white hover:bg-black/70"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </>
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground group-hover:text-foreground transition-colors">
+                  <div className="text-center">
+                    <ImagePlus className="w-8 h-8 mx-auto mb-1" />
+                    <span className="text-sm">Add cover image</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            <input
+              ref={coverInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleCoverChange}
+              className="hidden"
+            />
+          </div>
+
+          {/* Avatar Image Upload */}
+          <div className="space-y-2">
+            <Label>Group Avatar</Label>
+            <div className="flex items-center gap-4">
+              <div 
+                className="relative w-20 h-20 rounded-full overflow-hidden bg-primary/20 cursor-pointer group"
+                onClick={() => avatarInputRef.current?.click()}
+              >
+                {avatarPreview ? (
+                  <>
+                    <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setAvatarFile(null);
+                        setAvatarPreview(null);
+                      }}
+                      className="absolute top-0 right-0 p-1 rounded-full bg-black/50 text-white hover:bg-black/70"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </>
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground group-hover:text-foreground transition-colors">
+                    <ImagePlus className="w-6 h-6" />
+                  </div>
+                )}
+              </div>
+              <span className="text-sm text-muted-foreground">Click to upload group avatar</span>
+            </div>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              className="hidden"
+            />
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="name">Group Name</Label>
             <Input
@@ -203,8 +370,8 @@ const CreateGroupDialog = () => {
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isCreating || !name.trim()}>
-              {isCreating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+            <Button type="submit" disabled={isLoading || !name.trim()}>
+              {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Create Group
             </Button>
           </div>
