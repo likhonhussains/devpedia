@@ -321,8 +321,14 @@ const InviteMemberDialog = ({ groupId, members }: { groupId: string; members: Gr
   );
 };
 
-const MembersSheet = ({ groupId }: { groupId: string }) => {
-  const { members, membersLoading } = useGroup(groupId);
+const MembersSheet = ({ groupId, isAdmin, currentUserId }: { groupId: string; isAdmin: boolean; currentUserId?: string }) => {
+  const { members, membersLoading, removeMember, isRemovingMember } = useGroup(groupId);
+
+  const handleRemove = (e: React.MouseEvent, userId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    removeMember(userId);
+  };
 
   return (
     <Sheet>
@@ -347,34 +353,50 @@ const MembersSheet = ({ groupId }: { groupId: string }) => {
             </div>
           ) : members && members.length > 0 ? (
             members.map((member) => (
-              <Link
+              <div
                 key={member.id}
-                to={`/profile/${member.profile?.username || 'unknown'}`}
                 className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 transition-colors"
               >
-                <Avatar className="w-10 h-10 border border-white/20">
-                  <AvatarImage 
-                    src={member.profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.user_id}`}
-                    alt={member.profile?.display_name || 'User'}
-                  />
-                  <AvatarFallback>
-                    <User className="w-4 h-4" />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">
-                    {member.profile?.display_name || 'Unknown'}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    @{member.profile?.username || 'unknown'}
-                  </p>
-                </div>
+                <Link to={`/profile/${member.profile?.username || 'unknown'}`} className="flex items-center gap-3 flex-1 min-w-0">
+                  <Avatar className="w-10 h-10 border border-white/20">
+                    <AvatarImage 
+                      src={member.profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.user_id}`}
+                      alt={member.profile?.display_name || 'User'}
+                    />
+                    <AvatarFallback>
+                      <User className="w-4 h-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">
+                      {member.profile?.display_name || 'Unknown'}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      @{member.profile?.username || 'unknown'}
+                    </p>
+                  </div>
+                </Link>
                 {member.role !== 'member' && (
                   <span className="px-2 py-0.5 text-xs rounded-full bg-primary/20 text-primary capitalize">
                     {member.role}
                   </span>
                 )}
-              </Link>
+                {isAdmin && member.user_id !== currentUserId && member.role !== 'admin' && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => handleRemove(e, member.user_id)}
+                    disabled={isRemovingMember}
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    {isRemovingMember ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <X className="w-4 h-4" />
+                    )}
+                  </Button>
+                )}
+              </div>
             ))
           ) : (
             <p className="text-center text-muted-foreground py-8">No members yet</p>
@@ -506,7 +528,7 @@ const GroupDetail = () => {
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                <MembersSheet groupId={id!} />
+                <MembersSheet groupId={id!} isAdmin={isAdmin} currentUserId={user?.id} />
                 {isAdmin && <InviteMemberDialog groupId={id!} members={members || []} />}
                 
                 {user && (

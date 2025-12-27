@@ -348,6 +348,29 @@ export const useGroup = (groupId: string) => {
     },
   });
 
+  // Remove member mutation (for admins)
+  const removeMemberMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const { error } = await supabase
+        .from('group_members')
+        .delete()
+        .eq('group_id', groupId)
+        .eq('user_id', userId);
+      
+      if (error) throw error;
+      
+      await supabase.rpc('decrement_group_members', { p_group_id: groupId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['groupMembers', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['group', groupId] });
+      toast.success('Member removed successfully!');
+    },
+    onError: (error) => {
+      toast.error('Failed to remove member: ' + error.message);
+    },
+  });
+
   return {
     group,
     groupLoading,
@@ -362,5 +385,7 @@ export const useGroup = (groupId: string) => {
     isCreatingPost: createPostMutation.isPending,
     addMember: addMemberMutation.mutate,
     isAddingMember: addMemberMutation.isPending,
+    removeMember: removeMemberMutation.mutate,
+    isRemovingMember: removeMemberMutation.isPending,
   };
 };
