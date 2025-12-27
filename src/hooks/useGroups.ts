@@ -96,7 +96,13 @@ export const useGroups = () => {
 
   // Create group mutation
   const createGroupMutation = useMutation({
-    mutationFn: async ({ name, description, privacy }: { name: string; description?: string; privacy: 'public' | 'private' }) => {
+    mutationFn: async ({ name, description, privacy, avatarUrl, coverUrl }: { 
+      name: string; 
+      description?: string; 
+      privacy: 'public' | 'private';
+      avatarUrl?: string;
+      coverUrl?: string;
+    }) => {
       if (!user) throw new Error('Must be logged in');
       
       const { data, error } = await supabase
@@ -106,6 +112,8 @@ export const useGroups = () => {
           description,
           privacy,
           creator_id: user.id,
+          avatar_url: avatarUrl,
+          cover_url: coverUrl,
         })
         .select()
         .single();
@@ -418,6 +426,39 @@ export const useGroup = (groupId: string) => {
     },
   });
 
+  // Update group mutation (for admins)
+  const updateGroupMutation = useMutation({
+    mutationFn: async ({ name, description, privacy, avatarUrl, coverUrl }: { 
+      name: string; 
+      description?: string; 
+      privacy: 'public' | 'private';
+      avatarUrl?: string;
+      coverUrl?: string;
+    }) => {
+      const { error } = await supabase
+        .from('groups')
+        .update({
+          name,
+          description,
+          privacy,
+          avatar_url: avatarUrl,
+          cover_url: coverUrl,
+        })
+        .eq('id', groupId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['group', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      queryClient.invalidateQueries({ queryKey: ['myGroups'] });
+      toast.success('Group updated successfully!');
+    },
+    onError: (error) => {
+      toast.error('Failed to update group: ' + error.message);
+    },
+  });
+
   return {
     group,
     groupLoading,
@@ -440,5 +481,7 @@ export const useGroup = (groupId: string) => {
     isRemovingMember: removeMemberMutation.isPending,
     updateMemberRole: updateMemberRoleMutation.mutate,
     isUpdatingRole: updateMemberRoleMutation.isPending,
+    updateGroup: updateGroupMutation.mutate,
+    isUpdatingGroup: updateGroupMutation.isPending,
   };
 };
