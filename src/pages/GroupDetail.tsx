@@ -8,6 +8,7 @@ import {
   Lock, 
   Globe, 
   Loader2,
+  Trash2,
   MessageSquare,
   Plus,
   UserPlus,
@@ -53,7 +54,17 @@ import { useGroup, useGroups, GroupPost, GroupMember } from '@/hooks/useGroups';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
-const PostCard = ({ post }: { post: GroupPost }) => {
+interface PostCardProps {
+  post: GroupPost;
+  canManageContent: boolean;
+  isOwner: boolean;
+  onDelete: (postId: string) => void;
+  isDeleting: boolean;
+}
+
+const PostCard = ({ post, canManageContent, isOwner, onDelete, isDeleting }: PostCardProps) => {
+  const canDelete = canManageContent || isOwner;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -83,6 +94,21 @@ const PostCard = ({ post }: { post: GroupPost }) => {
             {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
           </p>
         </div>
+        {canDelete && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onDelete(post.id)}
+            disabled={isDeleting}
+            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 p-1 h-auto"
+          >
+            {isDeleting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Trash2 className="w-4 h-4" />
+            )}
+          </Button>
+        )}
       </div>
 
       <h3 className="font-bold text-lg mb-2">{post.title}</h3>
@@ -486,9 +512,12 @@ const GroupDetail = () => {
     groupLoading, 
     isMember, 
     isAdmin,
+    canManageContent,
     posts, 
     postsLoading,
-    members
+    members,
+    deletePost,
+    isDeletingPost
   } = useGroup(id || '');
   const { joinGroup, isJoining, leaveGroup, isLeaving } = useGroups();
 
@@ -645,7 +674,14 @@ const GroupDetail = () => {
               ) : posts && posts.length > 0 ? (
                 <div className="space-y-4">
                   {posts.map((post) => (
-                    <PostCard key={post.id} post={post} />
+                    <PostCard 
+                      key={post.id} 
+                      post={post}
+                      canManageContent={canManageContent}
+                      isOwner={post.user_id === user?.id}
+                      onDelete={deletePost}
+                      isDeleting={isDeletingPost}
+                    />
                   ))}
                 </div>
               ) : (

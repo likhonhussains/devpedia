@@ -232,6 +232,11 @@ export const useGroup = (groupId: string) => {
     enabled: !!groupId && !!user,
   });
 
+  const isMember = !!membership;
+  const isAdmin = membership?.role === 'admin';
+  const isModerator = membership?.role === 'moderator';
+  const canManageContent = isAdmin || isModerator;
+
   // Fetch group members
   const { data: members, isLoading: membersLoading } = useQuery({
     queryKey: ['groupMembers', groupId],
@@ -323,6 +328,28 @@ export const useGroup = (groupId: string) => {
     },
   });
 
+  // Delete post mutation
+  const deletePostMutation = useMutation({
+    mutationFn: async (postId: string) => {
+      const { error } = await supabase
+        .from('group_posts')
+        .delete()
+        .eq('id', postId);
+      
+      if (error) throw error;
+      
+      await supabase.rpc('decrement_group_posts', { p_group_id: groupId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['groupPosts', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['group', groupId] });
+      toast.success('Post deleted!');
+    },
+    onError: (error) => {
+      toast.error('Failed to delete post: ' + error.message);
+    },
+  });
+
   // Add member mutation (for admins)
   const addMemberMutation = useMutation({
     mutationFn: async (userId: string) => {
@@ -395,14 +422,18 @@ export const useGroup = (groupId: string) => {
     group,
     groupLoading,
     membership,
-    isMember: !!membership,
-    isAdmin: membership?.role === 'admin',
+    isMember,
+    isAdmin,
+    isModerator,
+    canManageContent,
     members,
     membersLoading,
     posts,
     postsLoading,
     createPost: createPostMutation.mutate,
     isCreatingPost: createPostMutation.isPending,
+    deletePost: deletePostMutation.mutate,
+    isDeletingPost: deletePostMutation.isPending,
     addMember: addMemberMutation.mutate,
     isAddingMember: addMemberMutation.isPending,
     removeMember: removeMemberMutation.mutate,
