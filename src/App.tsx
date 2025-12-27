@@ -17,6 +17,8 @@ import UserSearch from "./pages/UserSearch";
 import Leaderboard from "./pages/Leaderboard";
 import Drafts from "./pages/Drafts";
 import Achievements from "./pages/Achievements";
+import Groups from "./pages/Groups";
+import GroupDetail from "./pages/GroupDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +44,8 @@ const App = () => (
                 <Route path="/messages" element={<Messages />} />
                 <Route path="/users" element={<UserSearch />} />
                 <Route path="/leaderboard" element={<Leaderboard />} />
+                <Route path="/groups" element={<Groups />} />
+                <Route path="/groups/:id" element={<GroupDetail />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

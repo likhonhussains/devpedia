@@ -150,6 +150,159 @@ export type Database = {
         }
         Relationships: []
       }
+      group_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          likes_count: number
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          likes_count?: number
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          likes_count?: number
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "group_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_members: {
+        Row: {
+          group_id: string
+          id: string
+          joined_at: string
+          role: Database["public"]["Enums"]["group_role"]
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          joined_at?: string
+          role?: Database["public"]["Enums"]["group_role"]
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          joined_at?: string
+          role?: Database["public"]["Enums"]["group_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_posts: {
+        Row: {
+          comments_count: number
+          content: string
+          created_at: string
+          group_id: string
+          id: string
+          likes_count: number
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comments_count?: number
+          content: string
+          created_at?: string
+          group_id: string
+          id?: string
+          likes_count?: number
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comments_count?: number
+          content?: string
+          created_at?: string
+          group_id?: string
+          id?: string
+          likes_count?: number
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_posts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          avatar_url: string | null
+          cover_url: string | null
+          created_at: string
+          creator_id: string
+          description: string | null
+          id: string
+          members_count: number
+          name: string
+          posts_count: number
+          privacy: Database["public"]["Enums"]["group_privacy"]
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          cover_url?: string | null
+          created_at?: string
+          creator_id: string
+          description?: string | null
+          id?: string
+          members_count?: number
+          name: string
+          posts_count?: number
+          privacy?: Database["public"]["Enums"]["group_privacy"]
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          cover_url?: string | null
+          created_at?: string
+          creator_id?: string
+          description?: string | null
+          id?: string
+          members_count?: number
+          name?: string
+          posts_count?: number
+          privacy?: Database["public"]["Enums"]["group_privacy"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       likes: {
         Row: {
           comment_id: string | null
@@ -457,11 +610,27 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      decrement_group_members: {
+        Args: { p_group_id: string }
+        Returns: undefined
+      }
+      decrement_group_posts: {
+        Args: { p_group_id: string }
+        Returns: undefined
+      }
       decrement_post_comments: {
         Args: { p_post_id: string }
         Returns: undefined
       }
       decrement_post_likes: { Args: { post_id: string }; Returns: undefined }
+      increment_group_members: {
+        Args: { p_group_id: string }
+        Returns: undefined
+      }
+      increment_group_posts: {
+        Args: { p_group_id: string }
+        Returns: undefined
+      }
       increment_post_comments: {
         Args: { p_post_id: string }
         Returns: undefined
@@ -471,9 +640,18 @@ export type Database = {
         Args: { conv_id: string; uid: string }
         Returns: boolean
       }
+      is_group_admin: {
+        Args: { p_group_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_group_member: {
+        Args: { p_group_id: string; p_user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      group_privacy: "public" | "private"
+      group_role: "admin" | "moderator" | "member"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -600,6 +778,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      group_privacy: ["public", "private"],
+      group_role: ["admin", "moderator", "member"],
+    },
   },
 } as const
