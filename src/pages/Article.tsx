@@ -162,7 +162,7 @@ const Article = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6 }}
-          className="border-b border-border bg-gradient-to-b from-muted/30 to-background"
+          className="border-b border-white/10 bg-white/5 dark:bg-white/5 backdrop-blur-xl"
         >
           <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
             {/* Back Button */}
@@ -253,6 +253,7 @@ const Article = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
+              className="bg-white/5 dark:bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 sm:p-8 shadow-xl"
             >
               {/* Featured Image - Extract first image from content */}
               {(() => {
@@ -427,12 +428,12 @@ const Article = () => {
 
               {/* Tags Section */}
               {post.tags && post.tags.length > 0 && (
-                <div className="mt-10 pt-8 border-t border-border">
+                <div className="mt-10 pt-8 border-t border-white/10">
                   <div className="flex flex-wrap gap-2">
                     {post.tags.map((tag: string) => (
                       <span
                         key={tag}
-                        className="px-4 py-2 text-sm rounded-full bg-secondary text-secondary-foreground hover:bg-accent transition-colors cursor-pointer"
+                        className="px-4 py-2 text-sm rounded-full bg-white/10 dark:bg-white/10 backdrop-blur-sm border border-white/20 text-foreground hover:bg-white/20 transition-all cursor-pointer"
                       >
                         #{tag}
                       </span>
@@ -442,19 +443,19 @@ const Article = () => {
               )}
 
               {/* Actions Bar */}
-              <div className="mt-8 py-6 border-t border-b border-border">
+              <div className="mt-8 py-6 border-t border-b border-white/10">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Button
                       variant={isLiked ? "default" : "outline"}
                       size="sm"
                       onClick={toggleLike}
-                      className={`gap-2 ${isLiked ? 'bg-red-500 hover:bg-red-600 text-white border-red-500' : ''}`}
+                      className={`gap-2 backdrop-blur-sm ${isLiked ? 'bg-red-500 hover:bg-red-600 text-white border-red-500' : 'bg-white/10 border-white/20 hover:bg-white/20'}`}
                     >
                       <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
                       <span>{post.likes_count}</span>
                     </Button>
-                    <Button variant="outline" size="sm" className="gap-2">
+                    <Button variant="outline" size="sm" className="gap-2 bg-white/10 border-white/20 backdrop-blur-sm hover:bg-white/20">
                       <MessageCircle className="w-4 h-4" />
                       <span>{comments?.length || 0}</span>
                     </Button>
@@ -466,6 +467,7 @@ const Article = () => {
                       variant={isBookmarked ? "default" : "outline"}
                       size="sm"
                       onClick={() => setIsBookmarked(!isBookmarked)}
+                      className={`backdrop-blur-sm ${isBookmarked ? '' : 'bg-white/10 border-white/20 hover:bg-white/20'}`}
                     >
                       <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
                     </Button>
@@ -485,7 +487,7 @@ const Article = () => {
 
                 {/* Add Comment */}
                 {user ? (
-                  <div className="flex gap-4 mb-8 p-4 rounded-xl bg-muted/50 border border-border">
+                  <div className="flex gap-4 mb-8 p-4 rounded-xl bg-white/10 dark:bg-white/10 backdrop-blur-lg border border-white/20">
                     <Avatar className="w-10 h-10 border border-border flex-shrink-0">
                       <AvatarImage 
                         src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
@@ -501,7 +503,7 @@ const Article = () => {
                         onChange={(e) => setNewComment(e.target.value)}
                         placeholder="Share your thoughts..."
                         rows={3}
-                        className="w-full bg-background rounded-lg p-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none border border-border"
+                        className="w-full bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-lg p-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none border border-white/20"
                       />
                       <div className="flex justify-end">
                         <Button
@@ -521,7 +523,7 @@ const Article = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="mb-8 p-6 rounded-xl bg-muted/50 border border-border text-center">
+                  <div className="mb-8 p-6 rounded-xl bg-white/10 dark:bg-white/10 backdrop-blur-lg border border-white/20 text-center">
                     <p className="text-muted-foreground mb-4">Sign in to join the conversation</p>
                     <Link to="/auth">
                       <Button>Sign In</Button>
@@ -542,7 +544,7 @@ const Article = () => {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
-                        className="flex gap-4 p-4 rounded-xl hover:bg-muted/30 transition-colors"
+                        className="flex gap-4 p-4 rounded-xl hover:bg-white/10 transition-colors"
                       >
                         <Link to={`/profile/${comment.profiles?.username || 'unknown'}`} className="flex-shrink-0">
                           <Avatar className="w-10 h-10 border border-border hover:border-primary transition-colors">
@@ -597,7 +599,7 @@ const Article = () => {
               className="space-y-6 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:scrollbar-hide"
             >
               {/* Author Card */}
-              <div className="rounded-2xl border border-border bg-card p-6">
+              <div className="rounded-2xl border border-white/20 bg-white/10 dark:bg-white/10 backdrop-blur-xl p-6 shadow-xl">
                 <div className="text-center mb-4">
                   <Link to={`/profile/${authorProfile?.username || 'unknown'}`}>
                     <Avatar className="w-20 h-20 mx-auto mb-4 border-2 border-border hover:border-primary transition-colors">
@@ -632,7 +634,7 @@ const Article = () => {
 
               {/* Related Posts */}
               {relatedPosts && relatedPosts.length > 0 && (
-                <div className="rounded-2xl border border-border bg-card p-6">
+                <div className="rounded-2xl border border-white/20 bg-white/10 dark:bg-white/10 backdrop-blur-xl p-6 shadow-xl">
                   <h3 className="font-bold mb-4 flex items-center gap-2">
                     <TrendingUp className="w-4 h-4" />
                     More to Read
@@ -648,7 +650,7 @@ const Article = () => {
                           to={`/article/${relatedPost.id}`}
                           className="block group"
                         >
-                          <div className="flex items-start gap-3 p-3 -mx-3 rounded-lg hover:bg-muted/50 transition-colors">
+                          <div className="flex items-start gap-3 p-3 -mx-3 rounded-lg hover:bg-white/10 transition-colors">
                             <Avatar className="w-8 h-8 border border-border flex-shrink-0">
                               <AvatarImage 
                                 src={relatedProfile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${relatedPost.id}`}
@@ -676,13 +678,13 @@ const Article = () => {
 
               {/* Topics */}
               {post.tags && post.tags.length > 0 && (
-                <div className="rounded-2xl border border-border bg-card p-6">
+                <div className="rounded-2xl border border-white/20 bg-white/10 dark:bg-white/10 backdrop-blur-xl p-6 shadow-xl">
                   <h3 className="font-bold mb-4">Topics</h3>
                   <div className="flex flex-wrap gap-2">
                     {post.tags.map((tag: string) => (
                       <span
                         key={tag}
-                        className="px-3 py-1.5 text-sm rounded-full bg-muted text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
+                        className="px-3 py-1.5 text-sm rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-foreground hover:bg-white/20 transition-all cursor-pointer"
                       >
                         #{tag}
                       </span>
