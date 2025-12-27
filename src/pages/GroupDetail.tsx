@@ -14,7 +14,10 @@ import {
   Heart,
   User,
   Search,
-  X
+  X,
+  Shield,
+  Crown,
+  ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +41,12 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import Header from '@/components/Header';
 import ParticleBackground from '@/components/ParticleBackground';
 import { useGroup, useGroups, GroupPost, GroupMember } from '@/hooks/useGroups';
@@ -322,12 +331,22 @@ const InviteMemberDialog = ({ groupId, members }: { groupId: string; members: Gr
 };
 
 const MembersSheet = ({ groupId, isAdmin, currentUserId }: { groupId: string; isAdmin: boolean; currentUserId?: string }) => {
-  const { members, membersLoading, removeMember, isRemovingMember } = useGroup(groupId);
+  const { members, membersLoading, removeMember, isRemovingMember, updateMemberRole, isUpdatingRole } = useGroup(groupId);
 
   const handleRemove = (e: React.MouseEvent, userId: string) => {
     e.preventDefault();
     e.stopPropagation();
     removeMember(userId);
+  };
+
+  const handleRoleChange = (userId: string, role: 'admin' | 'moderator' | 'member') => {
+    updateMemberRole({ userId, role });
+  };
+
+  const getRoleIcon = (role: string) => {
+    if (role === 'admin') return <Crown className="w-3 h-3" />;
+    if (role === 'moderator') return <Shield className="w-3 h-3" />;
+    return null;
   };
 
   return (
@@ -376,18 +395,70 @@ const MembersSheet = ({ groupId, isAdmin, currentUserId }: { groupId: string; is
                     </p>
                   </div>
                 </Link>
-                {member.role !== 'member' && (
-                  <span className="px-2 py-0.5 text-xs rounded-full bg-primary/20 text-primary capitalize">
-                    {member.role}
-                  </span>
+                
+                {isAdmin && member.user_id !== currentUserId ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="gap-1 px-2"
+                        disabled={isUpdatingRole}
+                      >
+                        {isUpdatingRole ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <>
+                            {getRoleIcon(member.role)}
+                            <span className="text-xs capitalize">{member.role}</span>
+                            <ChevronDown className="w-3 h-3" />
+                          </>
+                        )}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-background/95 backdrop-blur-xl border-white/20">
+                      <DropdownMenuItem 
+                        onClick={() => handleRoleChange(member.user_id, 'admin')}
+                        className="gap-2"
+                      >
+                        <Crown className="w-4 h-4 text-amber-500" />
+                        <span>Admin</span>
+                        {member.role === 'admin' && <span className="ml-auto text-primary">✓</span>}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => handleRoleChange(member.user_id, 'moderator')}
+                        className="gap-2"
+                      >
+                        <Shield className="w-4 h-4 text-blue-500" />
+                        <span>Moderator</span>
+                        {member.role === 'moderator' && <span className="ml-auto text-primary">✓</span>}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => handleRoleChange(member.user_id, 'member')}
+                        className="gap-2"
+                      >
+                        <User className="w-4 h-4 text-muted-foreground" />
+                        <span>Member</span>
+                        {member.role === 'member' && <span className="ml-auto text-primary">✓</span>}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  member.role !== 'member' && (
+                    <span className="px-2 py-0.5 text-xs rounded-full bg-primary/20 text-primary capitalize flex items-center gap-1">
+                      {getRoleIcon(member.role)}
+                      {member.role}
+                    </span>
+                  )
                 )}
+                
                 {isAdmin && member.user_id !== currentUserId && member.role !== 'admin' && (
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={(e) => handleRemove(e, member.user_id)}
                     disabled={isRemovingMember}
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10 p-1 h-auto"
                   >
                     {isRemovingMember ? (
                       <Loader2 className="w-4 h-4 animate-spin" />

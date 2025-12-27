@@ -371,6 +371,26 @@ export const useGroup = (groupId: string) => {
     },
   });
 
+  // Update member role mutation (for admins)
+  const updateMemberRoleMutation = useMutation({
+    mutationFn: async ({ userId, role }: { userId: string; role: 'admin' | 'moderator' | 'member' }) => {
+      const { error } = await supabase
+        .from('group_members')
+        .update({ role })
+        .eq('group_id', groupId)
+        .eq('user_id', userId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['groupMembers', groupId] });
+      toast.success('Member role updated!');
+    },
+    onError: (error) => {
+      toast.error('Failed to update role: ' + error.message);
+    },
+  });
+
   return {
     group,
     groupLoading,
@@ -387,5 +407,7 @@ export const useGroup = (groupId: string) => {
     isAddingMember: addMemberMutation.isPending,
     removeMember: removeMemberMutation.mutate,
     isRemovingMember: removeMemberMutation.isPending,
+    updateMemberRole: updateMemberRoleMutation.mutate,
+    isUpdatingRole: updateMemberRoleMutation.isPending,
   };
 };
