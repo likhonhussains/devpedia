@@ -25,6 +25,8 @@ import Api from "./pages/Api";
 import Ebooks from "./pages/Ebooks";
 import EbookDetail from "./pages/EbookDetail";
 import CreateEbook from "./pages/CreateEbook";
+import MyEbooks from "./pages/MyEbooks";
+import EditEbook from "./pages/EditEbook";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -56,8 +58,10 @@ const App = () => (
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/api" element={<Api />} />
                 <Route path="/ebooks" element={<Ebooks />} />
-                <Route path="/ebooks/:id" element={<EbookDetail />} />
                 <Route path="/ebooks/create" element={<CreateEbook />} />
+                <Route path="/ebooks/:id" element={<EbookDetail />} />
+                <Route path="/ebooks/:id/edit" element={<EditEbook />} />
+                <Route path="/my-ebooks" element={<MyEbooks />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

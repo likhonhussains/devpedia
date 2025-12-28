@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, User, History, MessageCircle, Users, Trophy, Award, Menu, X, UsersRound, BookOpen } from 'lucide-react';
+import { LogOut, User, History, MessageCircle, Users, Trophy, Award, Menu, BookOpen, Library } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -31,8 +31,8 @@ const Header = () => {
   const menuItems = [
     { icon: Award, label: 'Achievements', path: '/achievements' },
     { icon: Trophy, label: 'Leaderboard', path: '/leaderboard' },
-    { icon: UsersRound, label: 'Groups', path: '/groups' },
     { icon: BookOpen, label: 'eBooks', path: '/ebooks' },
+    { icon: Library, label: 'My eBooks', path: '/my-ebooks' },
     { icon: Users, label: 'People', path: '/users' },
     { icon: History, label: 'History', path: '/history' },
     { icon: MessageCircle, label: 'Messages', path: '/messages', badge: unreadCount },
