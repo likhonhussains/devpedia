@@ -30,10 +30,8 @@ const Header = () => {
   };
 
   const menuItems = [
-    { icon: Award, label: 'Achievements', path: '/achievements' },
     { icon: Trophy, label: 'Leaderboard', path: '/leaderboard' },
     { icon: Users, label: 'People', path: '/users' },
-    { icon: History, label: 'History', path: '/history' },
     { icon: MessageCircle, label: 'Messages', path: '/messages', badge: unreadCount },
   ];
 
@@ -152,7 +150,7 @@ const Header = () => {
                           <img
                             src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
                             alt="Avatar"
-                            className="w-7 h-7 rounded-full ring-2 ring-primary/20 group-hover:ring-primary/50 transition-all"
+                            className="w-7 h-7 rounded-[10px] ring-2 ring-primary/20 group-hover:ring-primary/50 transition-all"
                           />
                           <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background" />
                         </div>
@@ -175,7 +173,7 @@ const Header = () => {
                             <img
                               src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
                               alt="Avatar"
-                              className="w-12 h-12 rounded-full ring-2 ring-primary/30"
+                              className="w-12 h-12 rounded-[10px] ring-2 ring-primary/30"
                             />
                             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-popover" />
                           </div>
@@ -249,7 +247,7 @@ const Header = () => {
                               <img
                                 src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
                                 alt="Avatar"
-                                className="w-12 h-12 rounded-full ring-2 ring-primary/30 shadow-lg"
+                                className="w-12 h-12 rounded-[10px] ring-2 ring-primary/30 shadow-lg"
                               />
                               <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-background" />
                             </div>
