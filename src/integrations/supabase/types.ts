@@ -772,6 +772,7 @@ export type Database = {
           cover_url: string | null
           created_at: string
           display_name: string
+          gender: string | null
           github: string | null
           id: string
           linkedin: string | null
@@ -788,6 +789,7 @@ export type Database = {
           cover_url?: string | null
           created_at?: string
           display_name: string
+          gender?: string | null
           github?: string | null
           id?: string
           linkedin?: string | null
@@ -804,6 +806,7 @@ export type Database = {
           cover_url?: string | null
           created_at?: string
           display_name?: string
+          gender?: string | null
           github?: string | null
           id?: string
           linkedin?: string | null
