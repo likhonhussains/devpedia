@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LogOut, User, History, MessageCircle, Users, Trophy, Award, Menu, BookOpen, UsersRound } from 'lucide-react';
+import { LogOut, User, History, MessageCircle, Users, Trophy, Award, Menu, BookOpen, UsersRound, Globe, UserCheck, Library, BookMarked } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -38,13 +38,13 @@ const Header = () => {
   ];
 
   const groupItems = [
-    { label: 'Browse Groups', path: '/groups' },
-    { label: 'My Groups', path: '/groups?filter=my' },
+    { icon: Globe, label: 'Browse Groups', path: '/groups' },
+    { icon: UserCheck, label: 'My Groups', path: '/groups?filter=my' },
   ];
 
   const ebookItems = [
-    { label: 'Browse eBooks', path: '/ebooks' },
-    { label: 'My eBooks', path: '/my-ebooks' },
+    { icon: Library, label: 'Browse eBooks', path: '/ebooks' },
+    { icon: BookMarked, label: 'My eBooks', path: '/my-ebooks' },
   ];
 
   return (
@@ -105,8 +105,9 @@ const Header = () => {
                         <DropdownMenuItem 
                           key={item.path} 
                           onSelect={() => navigate(item.path)}
-                          className="cursor-pointer"
+                          className="cursor-pointer gap-2"
                         >
+                          <item.icon className="w-4 h-4" />
                           {item.label}
                         </DropdownMenuItem>
                       ))}
@@ -130,8 +131,9 @@ const Header = () => {
                         <DropdownMenuItem 
                           key={item.path} 
                           onSelect={() => navigate(item.path)}
-                          className="cursor-pointer"
+                          className="cursor-pointer gap-2"
                         >
+                          <item.icon className="w-4 h-4" />
                           {item.label}
                         </DropdownMenuItem>
                       ))}
@@ -217,7 +219,7 @@ const Header = () => {
                                 className="w-full flex items-center gap-3 px-2 py-2 text-left hover:bg-secondary/50 transition-colors rounded-md"
                                 onClick={() => handleNavigate(item.path)}
                               >
-                                <UsersRound className="w-4 h-4 text-muted-foreground" />
+                                <item.icon className="w-4 h-4 text-muted-foreground" />
                                 <span className="text-sm">{item.label}</span>
                               </button>
                             ))}
@@ -231,7 +233,7 @@ const Header = () => {
                                 className="w-full flex items-center gap-3 px-2 py-2 text-left hover:bg-secondary/50 transition-colors rounded-md"
                                 onClick={() => handleNavigate(item.path)}
                               >
-                                <BookOpen className="w-4 h-4 text-muted-foreground" />
+                                <item.icon className="w-4 h-4 text-muted-foreground" />
                                 <span className="text-sm">{item.label}</span>
                               </button>
                             ))}
