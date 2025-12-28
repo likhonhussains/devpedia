@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
@@ -40,15 +41,28 @@ const Article = () => {
   const [newComment, setNewComment] = useState('');
   const [isRecordingMode, setIsRecordingMode] = useState(false);
 
-  // Fetch post data from database
+  // Fetch post data from database - try slug first, then id for backward compatibility
   const { data: post, isLoading: postLoading, error: postError } = useQuery({
     queryKey: ['post', slug],
     queryFn: async () => {
-      const { data: postData, error: postError } = await supabase
+      // Try to find by slug first
+      let { data: postData, error: postError } = await supabase
         .from('posts')
         .select('*')
-        .eq('id', slug)
+        .eq('slug', slug)
         .maybeSingle();
+
+      // If not found by slug, try by id for backward compatibility
+      if (!postData) {
+        const { data: postById, error: errorById } = await supabase
+          .from('posts')
+          .select('*')
+          .eq('id', slug)
+          .maybeSingle();
+        
+        postData = postById;
+        postError = errorById;
+      }
 
       if (postError) throw postError;
       if (!postData) return null;
@@ -159,9 +173,81 @@ const Article = () => {
   }
 
   const authorProfile = post.authorProfile;
+  
+  // Extract first image for og:image
+  const imageMatch = post.content.match(/!\[.*?\]\((.*?)\)/);
+  const featuredImage = imageMatch ? imageMatch[1] : 'https://lovable.dev/opengraph-image-p98pqg.png';
+  
+  // Generate SEO-friendly description (first 160 chars of content without markdown)
+  const seoDescription = post.content
+    .replace(/!\[.*?\]\([^)]+\)/g, '') // Remove images
+    .replace(/[#*`>\[\]]/g, '') // Remove markdown syntax
+    .replace(/\n+/g, ' ')
+    .trim()
+    .slice(0, 160) + (post.content.length > 160 ? '...' : '');
+  
+  // Canonical URL using slug
+  const canonicalUrl = `${window.location.origin}/article/${post.slug}`;
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-background">
+      {/* SEO Meta Tags */}
+      <Helmet>
+        <title>{post.title} | Basic Comet</title>
+        <meta name="description" content={seoDescription} />
+        <link rel="canonical" href={canonicalUrl} />
+        
+        {/* Open Graph */}
+        <meta property="og:title" content={post.title} />
+        <meta property="og:description" content={seoDescription} />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:image" content={featuredImage} />
+        <meta property="og:site_name" content="Basic Comet" />
+        <meta property="article:published_time" content={post.created_at} />
+        <meta property="article:modified_time" content={post.updated_at} />
+        <meta property="article:author" content={authorProfile?.display_name || 'Unknown'} />
+        {post.category && <meta property="article:section" content={post.category} />}
+        {post.tags?.map((tag: string) => (
+          <meta key={tag} property="article:tag" content={tag} />
+        ))}
+        
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={post.title} />
+        <meta name="twitter:description" content={seoDescription} />
+        <meta name="twitter:image" content={featuredImage} />
+        
+        {/* JSON-LD Structured Data */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Article",
+            "headline": post.title,
+            "description": seoDescription,
+            "image": featuredImage,
+            "datePublished": post.created_at,
+            "dateModified": post.updated_at,
+            "author": {
+              "@type": "Person",
+              "name": authorProfile?.display_name || 'Unknown',
+              "url": `${window.location.origin}/profile/${authorProfile?.username}`
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "Basic Comet",
+              "url": window.location.origin
+            },
+            "mainEntityOfPage": {
+              "@type": "WebPage",
+              "@id": canonicalUrl
+            },
+            "articleSection": post.category || "General",
+            "keywords": post.tags?.join(", ") || ""
+          })}
+        </script>
+      </Helmet>
+      
       <ParticleBackground />
       <Header />
 

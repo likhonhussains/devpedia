@@ -9,6 +9,7 @@ import ShareDropdown from './ShareDropdown';
 
 interface ContentCardProps {
   id: string;
+  slug?: string;
   type: 'post' | 'note' | 'video';
   title: string;
   author: string;
@@ -46,6 +47,7 @@ const stripMarkdownImages = (content: string): string => {
 
 const ContentCard = ({
   id,
+  slug,
   type,
   title,
   author,
@@ -60,6 +62,9 @@ const ContentCard = ({
   const { isLiked, isLoading, toggleLike } = useLikePost(id);
   const { trackRead } = useReadingHistory();
   const username = author.toLowerCase().replace(/\s+/g, '');
+  
+  // Use SEO-friendly slug URL or fallback to id
+  const articleUrl = slug ? `/article/${slug}` : `/article/${id}`;
 
   const handleClick = () => {
     trackRead(id);
@@ -98,7 +103,8 @@ const ContentCard = ({
         <div className="relative mb-4 rounded-lg overflow-hidden">
           <img
             src={thumbnail}
-            alt={title}
+            alt={`${title} - Video thumbnail by ${author}`}
+            loading="lazy"
             className="w-full h-44 object-cover transition-transform duration-500 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-background/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -138,7 +144,7 @@ const ContentCard = ({
       </div>
 
       {/* Content */}
-      <Link to={`/article/${id}`} className="block group/title" onClick={handleClick}>
+      <Link to={articleUrl} className="block group/title" onClick={handleClick}>
         <h3 className="font-semibold text-base mb-2 line-clamp-2 group-hover/title:text-primary transition-colors">
           {title}
         </h3>
@@ -184,7 +190,7 @@ const ContentCard = ({
         
         <div className="flex-1" />
         
-        <ShareDropdown title={title} url={`${window.location.origin}/article/${id}`} />
+        <ShareDropdown title={title} url={`${window.location.origin}${articleUrl}`} />
         <button className="p-2 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
           <Bookmark className="w-3.5 h-3.5" />
         </button>

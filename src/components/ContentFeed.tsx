@@ -193,6 +193,7 @@ const ContentFeed = ({ activeTab, searchQuery = '', category = 'all', feedMode =
 
   const content = filteredPosts.map((post) => ({
     id: post.id,
+    slug: post.slug,
     type: post.type as 'post' | 'note' | 'video',
     title: post.title,
     author: post.profile?.display_name || 'Anonymous',

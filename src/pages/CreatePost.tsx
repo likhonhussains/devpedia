@@ -334,7 +334,7 @@ const CreatePost = () => {
             tags: selectedTags,
             category: selectedCategory,
             status: 'draft',
-          })
+          } as any)
           .select('id')
           .single();
 
@@ -426,7 +426,7 @@ const CreatePost = () => {
           tags: selectedTags,
           category: selectedCategory,
           status: 'published',
-        });
+        } as any);
 
         if (error) throw error;
       }
