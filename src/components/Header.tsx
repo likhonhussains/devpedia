@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LogOut, User, History, MessageCircle, Users, Trophy, Award, Menu, BookOpen, UsersRound, Globe, UserCheck, Library, BookMarked, Settings, ChevronDown, Sparkles } from 'lucide-react';
+import { LogOut, User, History, MessageCircle, Users, Trophy, Award, Menu, BookOpen, UsersRound, Globe, UserCheck, Library, BookMarked, ChevronDown, Sparkles, Bell, Moon, Sun } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import ThemeToggle from '@/components/ThemeToggle';
+import { useTheme } from 'next-themes';
 import { useMessages } from '@/hooks/useMessages';
-import NotificationBell from '@/components/NotificationBell';
+import { useNotifications } from '@/hooks/useNotifications';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import logoIcon from '@/assets/logo.png';
@@ -14,6 +14,8 @@ import logoIcon from '@/assets/logo.png';
 const Header = () => {
   const { user, profile, signOut } = useAuth();
   const { getTotalUnreadCount } = useMessages();
+  const { unreadCount: notificationCount } = useNotifications();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const unreadCount = getTotalUnreadCount();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -62,12 +64,10 @@ const Header = () => {
           </Link>
 
           <div className="flex items-center gap-0.5">
-            <ThemeToggle />
             {user ? (
               <>
                 {/* Desktop Navigation */}
                 <div className="hidden md:flex items-center gap-0.5">
-                  <NotificationBell />
                   {menuItems.map((item) => (
                     <Button
                       key={item.path}
@@ -195,6 +195,24 @@ const Header = () => {
                         </DropdownMenuItem>
                         
                         <DropdownMenuItem 
+                          onSelect={() => navigate('/notifications')}
+                          className="cursor-pointer gap-3 py-2.5 px-3 rounded-lg"
+                        >
+                          <div className="relative">
+                            <Bell className="w-4 h-4 text-muted-foreground" />
+                            {notificationCount > 0 && (
+                              <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" />
+                            )}
+                          </div>
+                          <span className="flex-1">Notifications</span>
+                          {notificationCount > 0 && (
+                            <span className="text-xs bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full">
+                              {notificationCount > 9 ? '9+' : notificationCount}
+                            </span>
+                          )}
+                        </DropdownMenuItem>
+                        
+                        <DropdownMenuItem 
                           onSelect={() => navigate('/achievements')}
                           className="cursor-pointer gap-3 py-2.5 px-3 rounded-lg"
                         >
@@ -215,6 +233,25 @@ const Header = () => {
                       
                       <div className="p-1">
                         <DropdownMenuItem 
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            setTheme(theme === 'dark' ? 'light' : 'dark');
+                          }}
+                          className="cursor-pointer gap-3 py-2.5 px-3 rounded-lg"
+                        >
+                          {theme === 'dark' ? (
+                            <Sun className="w-4 h-4 text-muted-foreground" />
+                          ) : (
+                            <Moon className="w-4 h-4 text-muted-foreground" />
+                          )}
+                          <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+                        </DropdownMenuItem>
+                      </div>
+                      
+                      <DropdownMenuSeparator className="my-1" />
+                      
+                      <div className="p-1">
+                        <DropdownMenuItem 
                           onSelect={handleSignOut}
                           className="cursor-pointer gap-3 py-2.5 px-3 rounded-lg text-destructive focus:text-destructive focus:bg-destructive/10"
                         >
@@ -228,7 +265,6 @@ const Header = () => {
 
                 {/* Mobile Navigation */}
                 <div className="flex md:hidden items-center gap-1">
-                  <NotificationBell />
                   <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                     <SheetTrigger asChild>
                       <Button variant="ghost" size="icon" className="w-8 h-8">
@@ -304,6 +340,38 @@ const Header = () => {
                               </button>
                             ))}
                           </div>
+                          
+                          {/* Notifications in mobile */}
+                          <button
+                            className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-secondary/50 transition-colors"
+                            onClick={() => handleNavigate('/notifications')}
+                          >
+                            <div className="relative">
+                              <Bell className="w-5 h-5 text-muted-foreground" />
+                              {notificationCount > 0 && (
+                                <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" />
+                              )}
+                            </div>
+                            <span>Notifications</span>
+                            {notificationCount > 0 && (
+                              <span className="ml-auto bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
+                                {notificationCount > 9 ? '9+' : notificationCount}
+                              </span>
+                            )}
+                          </button>
+                          
+                          {/* Dark Mode toggle in mobile */}
+                          <button
+                            className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-secondary/50 transition-colors"
+                            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                          >
+                            {theme === 'dark' ? (
+                              <Sun className="w-5 h-5 text-muted-foreground" />
+                            ) : (
+                              <Moon className="w-5 h-5 text-muted-foreground" />
+                            )}
+                            <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+                          </button>
                         </div>
 
                         {/* Sign Out */}
