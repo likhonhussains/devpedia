@@ -46,27 +46,36 @@ export type Database = {
       }
       comments: {
         Row: {
+          audio_url: string | null
           content: string
           created_at: string
           id: string
+          is_voice_note: boolean | null
           likes_count: number
           post_id: string
+          transcription: string | null
           user_id: string
         }
         Insert: {
+          audio_url?: string | null
           content: string
           created_at?: string
           id?: string
+          is_voice_note?: boolean | null
           likes_count?: number
           post_id: string
+          transcription?: string | null
           user_id: string
         }
         Update: {
+          audio_url?: string | null
           content?: string
           created_at?: string
           id?: string
+          is_voice_note?: boolean | null
           likes_count?: number
           post_id?: string
+          transcription?: string | null
           user_id?: string
         }
         Relationships: [
