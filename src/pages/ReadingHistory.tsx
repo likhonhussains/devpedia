@@ -146,6 +146,7 @@ const ReadingHistory = () => {
                 >
                   <ContentCard
                     id={item.post.id}
+                    slug={item.post.slug || undefined}
                     type={item.post.type as 'post' | 'note' | 'video'}
                     title={item.post.title}
                     author={item.author.display_name}

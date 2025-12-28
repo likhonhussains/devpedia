@@ -42,6 +42,7 @@ interface PostData {
   created_at: string;
   tags: string[] | null;
   video_url: string | null;
+  slug: string | null;
 }
 
 const Profile = () => {
@@ -574,6 +575,7 @@ const Profile = () => {
                   >
                     <ContentCard
                       id={item.id}
+                      slug={item.slug}
                       type={item.type as 'post' | 'note' | 'video'}
                       title={item.title}
                       author={profileData.display_name}

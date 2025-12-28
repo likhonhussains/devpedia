@@ -20,6 +20,7 @@ interface ReadingHistoryItem {
     category: string | null;
     updated_at: string;
     status: string;
+    slug: string | null;
   };
   author: {
     display_name: string;
@@ -101,6 +102,7 @@ export const useReadingHistory = () => {
             tags: post.tags || null,
             video_url: post.video_url || null,
             category: post.category || null,
+            slug: post.slug || null,
           },
           author,
         };
