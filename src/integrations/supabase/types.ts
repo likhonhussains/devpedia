@@ -217,6 +217,35 @@ export type Database = {
           },
         ]
       }
+      group_post_likes: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "group_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_posts: {
         Row: {
           comments_count: number
@@ -614,6 +643,14 @@ export type Database = {
         Args: { p_group_id: string }
         Returns: undefined
       }
+      decrement_group_post_comments: {
+        Args: { p_post_id: string }
+        Returns: undefined
+      }
+      decrement_group_post_likes: {
+        Args: { p_post_id: string }
+        Returns: undefined
+      }
       decrement_group_posts: {
         Args: { p_group_id: string }
         Returns: undefined
@@ -625,6 +662,14 @@ export type Database = {
       decrement_post_likes: { Args: { post_id: string }; Returns: undefined }
       increment_group_members: {
         Args: { p_group_id: string }
+        Returns: undefined
+      }
+      increment_group_post_comments: {
+        Args: { p_post_id: string }
+        Returns: undefined
+      }
+      increment_group_post_likes: {
+        Args: { p_post_id: string }
         Returns: undefined
       }
       increment_group_posts: {

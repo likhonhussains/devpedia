@@ -20,7 +20,8 @@ import {
   Crown,
   ChevronDown,
   Settings,
-  ImagePlus
+  ImagePlus,
+  Send
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,12 +52,127 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import Header from '@/components/Header';
 import ParticleBackground from '@/components/ParticleBackground';
 import { useGroup, useGroups, GroupPost, GroupMember, Group } from '@/hooks/useGroups';
+import { useGroupPostLike, useGroupPostComments } from '@/hooks/useGroupPostInteractions';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+// Comments Sheet Component
+const CommentsSheet = ({ postId, commentsCount }: { postId: string; commentsCount: number }) => {
+  const [open, setOpen] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  const { user } = useAuth();
+  const { comments, commentsLoading, addComment, isAddingComment, deleteComment, isDeletingComment } = useGroupPostComments(postId);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim()) return;
+    addComment(newComment.trim(), {
+      onSuccess: () => setNewComment(''),
+    });
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
+          <MessageSquare className="w-4 h-4" />
+          <span>{commentsCount}</span>
+        </button>
+      </SheetTrigger>
+      <SheetContent className="bg-background/95 backdrop-blur-xl border-white/20 flex flex-col">
+        <SheetHeader>
+          <SheetTitle>Comments</SheetTitle>
+          <SheetDescription>
+            {comments.length} comment{comments.length !== 1 ? 's' : ''} on this post
+          </SheetDescription>
+        </SheetHeader>
+
+        <ScrollArea className="flex-1 mt-4 -mx-6 px-6">
+          {commentsLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          ) : comments.length > 0 ? (
+            <div className="space-y-4">
+              {comments.map((comment) => (
+                <div
+                  key={comment.id}
+                  className="flex gap-3 p-3 rounded-lg bg-white/5 border border-white/10"
+                >
+                  <Link to={`/profile/${comment.author?.username || 'unknown'}`}>
+                    <Avatar className="w-8 h-8 border border-white/20">
+                      <AvatarImage 
+                        src={comment.author?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.user_id}`}
+                        alt={comment.author?.display_name || 'User'}
+                      />
+                      <AvatarFallback>
+                        <User className="w-3 h-3" />
+                      </AvatarFallback>
+                    </Avatar>
+                  </Link>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <Link 
+                        to={`/profile/${comment.author?.username || 'unknown'}`}
+                        className="font-medium text-sm hover:text-primary transition-colors"
+                      >
+                        {comment.author?.display_name || 'Unknown'}
+                      </Link>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                        </span>
+                        {user?.id === comment.user_id && (
+                          <button
+                            onClick={() => deleteComment(comment.id)}
+                            disabled={isDeletingComment}
+                            className="text-muted-foreground hover:text-destructive transition-colors"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-sm text-foreground/80 mt-1 whitespace-pre-wrap">
+                      {comment.content}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              No comments yet. Be the first to comment!
+            </div>
+          )}
+        </ScrollArea>
+
+        {user && (
+          <form onSubmit={handleSubmit} className="mt-4 flex gap-2">
+            <Input
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="Write a comment..."
+              className="flex-1 bg-white/5 border-white/20"
+            />
+            <Button type="submit" size="icon" disabled={isAddingComment || !newComment.trim()}>
+              {isAddingComment ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+            </Button>
+          </form>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+};
 
 interface PostCardProps {
   post: GroupPost;
@@ -64,10 +180,13 @@ interface PostCardProps {
   isOwner: boolean;
   onDelete: (postId: string) => void;
   isDeleting: boolean;
+  isMember: boolean;
 }
 
-const PostCard = ({ post, canManageContent, isOwner, onDelete, isDeleting }: PostCardProps) => {
+const PostCard = ({ post, canManageContent, isOwner, onDelete, isDeleting, isMember }: PostCardProps) => {
   const canDelete = canManageContent || isOwner;
+  const { user } = useAuth();
+  const { isLiked, toggleLike, isToggling } = useGroupPostLike(post.id);
 
   return (
     <motion.div
@@ -121,14 +240,19 @@ const PostCard = ({ post, canManageContent, isOwner, onDelete, isDeleting }: Pos
       </p>
 
       <div className="flex items-center gap-4 pt-4 border-t border-white/10">
-        <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
-          <Heart className="w-4 h-4" />
+        <button 
+          onClick={user && isMember ? toggleLike : undefined}
+          disabled={isToggling || !user || !isMember}
+          className={`flex items-center gap-1.5 text-sm transition-colors ${
+            isLiked 
+              ? 'text-red-500 hover:text-red-400' 
+              : 'text-muted-foreground hover:text-primary'
+          } ${(!user || !isMember) ? 'cursor-default' : ''}`}
+        >
+          <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
           <span>{post.likes_count}</span>
         </button>
-        <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
-          <MessageSquare className="w-4 h-4" />
-          <span>{post.comments_count}</span>
-        </button>
+        <CommentsSheet postId={post.id} commentsCount={post.comments_count} />
       </div>
     </motion.div>
   );
@@ -869,6 +993,7 @@ const GroupDetail = () => {
                       isOwner={post.user_id === user?.id}
                       onDelete={deletePost}
                       isDeleting={isDeletingPost}
+                      isMember={isMember}
                     />
                   ))}
                 </div>
