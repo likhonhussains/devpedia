@@ -100,9 +100,13 @@ const Header = () => {
                         <span className="hidden lg:inline">Groups</span>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-popover">
+                    <DropdownMenuContent align="end" className="bg-popover border border-border z-50">
                       {groupItems.map((item) => (
-                        <DropdownMenuItem key={item.path} onClick={() => navigate(item.path)}>
+                        <DropdownMenuItem 
+                          key={item.path} 
+                          onSelect={() => navigate(item.path)}
+                          className="cursor-pointer"
+                        >
                           {item.label}
                         </DropdownMenuItem>
                       ))}
@@ -121,9 +125,13 @@ const Header = () => {
                         <span className="hidden lg:inline">eBooks</span>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-popover">
+                    <DropdownMenuContent align="end" className="bg-popover border border-border z-50">
                       {ebookItems.map((item) => (
-                        <DropdownMenuItem key={item.path} onClick={() => navigate(item.path)}>
+                        <DropdownMenuItem 
+                          key={item.path} 
+                          onSelect={() => navigate(item.path)}
+                          className="cursor-pointer"
+                        >
                           {item.label}
                         </DropdownMenuItem>
                       ))}
