@@ -722,6 +722,7 @@ export type Database = {
           created_at: string
           id: string
           likes_count: number
+          slug: string
           status: string
           tags: string[] | null
           title: string
@@ -737,6 +738,7 @@ export type Database = {
           created_at?: string
           id?: string
           likes_count?: number
+          slug: string
           status?: string
           tags?: string[] | null
           title: string
@@ -752,6 +754,7 @@ export type Database = {
           created_at?: string
           id?: string
           likes_count?: number
+          slug?: string
           status?: string
           tags?: string[] | null
           title?: string
@@ -905,6 +908,10 @@ export type Database = {
         Returns: undefined
       }
       decrement_post_likes: { Args: { post_id: string }; Returns: undefined }
+      generate_slug: {
+        Args: { post_id: string; title: string }
+        Returns: string
+      }
       increment_ebook_likes: {
         Args: { p_ebook_id: string }
         Returns: undefined
