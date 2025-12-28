@@ -141,6 +141,223 @@ export type Database = {
         }
         Relationships: []
       }
+      ebook_bookmarks: {
+        Row: {
+          created_at: string
+          ebook_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          ebook_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          ebook_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ebook_bookmarks_ebook_id_fkey"
+            columns: ["ebook_id"]
+            isOneToOne: false
+            referencedRelation: "ebooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ebook_chapter_comments: {
+        Row: {
+          chapter_id: string
+          content: string
+          created_at: string
+          id: string
+          likes_count: number
+          user_id: string
+        }
+        Insert: {
+          chapter_id: string
+          content: string
+          created_at?: string
+          id?: string
+          likes_count?: number
+          user_id: string
+        }
+        Update: {
+          chapter_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          likes_count?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ebook_chapter_comments_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "ebook_chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ebook_chapters: {
+        Row: {
+          chapter_order: number
+          content: string
+          created_at: string
+          ebook_id: string
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          chapter_order?: number
+          content: string
+          created_at?: string
+          ebook_id: string
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          chapter_order?: number
+          content?: string
+          created_at?: string
+          ebook_id?: string
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ebook_chapters_ebook_id_fkey"
+            columns: ["ebook_id"]
+            isOneToOne: false
+            referencedRelation: "ebooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ebook_likes: {
+        Row: {
+          created_at: string
+          ebook_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          ebook_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          ebook_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ebook_likes_ebook_id_fkey"
+            columns: ["ebook_id"]
+            isOneToOne: false
+            referencedRelation: "ebooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ebook_reviews: {
+        Row: {
+          content: string | null
+          created_at: string
+          ebook_id: string
+          id: string
+          rating: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          ebook_id: string
+          id?: string
+          rating: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          ebook_id?: string
+          id?: string
+          rating?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ebook_reviews_ebook_id_fkey"
+            columns: ["ebook_id"]
+            isOneToOne: false
+            referencedRelation: "ebooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ebooks: {
+        Row: {
+          average_rating: number | null
+          cover_url: string | null
+          created_at: string
+          description: string | null
+          genre: Database["public"]["Enums"]["ebook_genre"]
+          id: string
+          likes_count: number
+          reviews_count: number
+          status: Database["public"]["Enums"]["ebook_status"]
+          title: string
+          updated_at: string
+          user_id: string
+          views_count: number
+        }
+        Insert: {
+          average_rating?: number | null
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          genre?: Database["public"]["Enums"]["ebook_genre"]
+          id?: string
+          likes_count?: number
+          reviews_count?: number
+          status?: Database["public"]["Enums"]["ebook_status"]
+          title: string
+          updated_at?: string
+          user_id: string
+          views_count?: number
+        }
+        Update: {
+          average_rating?: number | null
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          genre?: Database["public"]["Enums"]["ebook_genre"]
+          id?: string
+          likes_count?: number
+          reviews_count?: number
+          status?: Database["public"]["Enums"]["ebook_status"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+          views_count?: number
+        }
+        Relationships: []
+      }
       followers: {
         Row: {
           created_at: string
@@ -651,6 +868,10 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      decrement_ebook_likes: {
+        Args: { p_ebook_id: string }
+        Returns: undefined
+      }
       decrement_group_members: {
         Args: { p_group_id: string }
         Returns: undefined
@@ -672,6 +893,14 @@ export type Database = {
         Returns: undefined
       }
       decrement_post_likes: { Args: { post_id: string }; Returns: undefined }
+      increment_ebook_likes: {
+        Args: { p_ebook_id: string }
+        Returns: undefined
+      }
+      increment_ebook_views: {
+        Args: { p_ebook_id: string }
+        Returns: undefined
+      }
       increment_group_members: {
         Args: { p_group_id: string }
         Returns: undefined
@@ -711,6 +940,23 @@ export type Database = {
       }
     }
     Enums: {
+      ebook_genre:
+        | "fiction"
+        | "non_fiction"
+        | "technology"
+        | "science"
+        | "self_help"
+        | "business"
+        | "biography"
+        | "history"
+        | "fantasy"
+        | "mystery"
+        | "romance"
+        | "horror"
+        | "poetry"
+        | "education"
+        | "other"
+      ebook_status: "draft" | "published" | "archived"
       group_privacy: "public" | "private"
       group_role: "admin" | "moderator" | "member"
     }
@@ -840,6 +1086,24 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      ebook_genre: [
+        "fiction",
+        "non_fiction",
+        "technology",
+        "science",
+        "self_help",
+        "business",
+        "biography",
+        "history",
+        "fantasy",
+        "mystery",
+        "romance",
+        "horror",
+        "poetry",
+        "education",
+        "other",
+      ],
+      ebook_status: ["draft", "published", "archived"],
       group_privacy: ["public", "private"],
       group_role: ["admin", "moderator", "member"],
     },

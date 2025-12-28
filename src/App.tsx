@@ -22,6 +22,9 @@ import GroupDetail from "./pages/GroupDetail";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Api from "./pages/Api";
+import Ebooks from "./pages/Ebooks";
+import EbookDetail from "./pages/EbookDetail";
+import CreateEbook from "./pages/CreateEbook";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +55,9 @@ const App = () => (
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/api" element={<Api />} />
+                <Route path="/ebooks" element={<Ebooks />} />
+                <Route path="/ebooks/:id" element={<EbookDetail />} />
+                <Route path="/ebooks/create" element={<CreateEbook />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
