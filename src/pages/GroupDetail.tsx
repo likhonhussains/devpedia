@@ -514,24 +514,11 @@ const EditGroupDialog = ({ group, groupId }: { group: Group; groupId: string }) 
   const [name, setName] = useState(group.name);
   const [description, setDescription] = useState(group.description || '');
   const [privacy, setPrivacy] = useState<'public' | 'private'>(group.privacy);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(group.avatar_url);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(group.cover_url);
   const [uploading, setUploading] = useState(false);
-  const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const { updateGroup, isUpdatingGroup } = useGroup(groupId);
-
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setAvatarFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setAvatarPreview(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-  };
 
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -543,9 +530,9 @@ const EditGroupDialog = ({ group, groupId }: { group: Group; groupId: string }) 
     }
   };
 
-  const uploadImage = async (file: File, type: 'avatar' | 'cover'): Promise<string | undefined> => {
+  const uploadImage = async (file: File): Promise<string | undefined> => {
     const fileExt = file.name.split('.').pop();
-    const fileName = `${type}-${groupId}-${Date.now()}.${fileExt}`;
+    const fileName = `cover-${groupId}-${Date.now()}.${fileExt}`;
     const filePath = `${fileName}`;
 
     const { error: uploadError } = await supabase.storage
@@ -553,7 +540,7 @@ const EditGroupDialog = ({ group, groupId }: { group: Group; groupId: string }) 
       .upload(filePath, file);
 
     if (uploadError) {
-      toast.error(`Failed to upload ${type}: ${uploadError.message}`);
+      toast.error(`Failed to upload image: ${uploadError.message}`);
       return undefined;
     }
 
@@ -566,19 +553,15 @@ const EditGroupDialog = ({ group, groupId }: { group: Group; groupId: string }) 
     if (!name.trim()) return;
     
     setUploading(true);
-    let avatarUrl: string | undefined = group.avatar_url || undefined;
     let coverUrl: string | undefined = group.cover_url || undefined;
 
     try {
-      if (avatarFile) {
-        avatarUrl = await uploadImage(avatarFile, 'avatar');
-      }
       if (coverFile) {
-        coverUrl = await uploadImage(coverFile, 'cover');
+        coverUrl = await uploadImage(coverFile);
       }
 
       updateGroup(
-        { name, description, privacy, avatarUrl, coverUrl },
+        { name, description, privacy, coverUrl },
         {
           onSuccess: () => {
             setOpen(false);
@@ -611,7 +594,7 @@ const EditGroupDialog = ({ group, groupId }: { group: Group; groupId: string }) 
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           {/* Cover Image Upload */}
           <div className="space-y-2">
-            <Label>Cover Image</Label>
+            <Label>Group Cover Image</Label>
             <div 
               className="relative h-32 rounded-lg overflow-hidden bg-gradient-to-br from-primary/30 to-primary/10 cursor-pointer group"
               onClick={() => coverInputRef.current?.click()}
@@ -645,46 +628,6 @@ const EditGroupDialog = ({ group, groupId }: { group: Group; groupId: string }) 
               type="file"
               accept="image/*"
               onChange={handleCoverChange}
-              className="hidden"
-            />
-          </div>
-
-          {/* Avatar Image Upload */}
-          <div className="space-y-2">
-            <Label>Group Avatar</Label>
-            <div className="flex items-center gap-4">
-              <div 
-                className="relative w-20 h-20 rounded-full overflow-hidden bg-primary/20 cursor-pointer group"
-                onClick={() => avatarInputRef.current?.click()}
-              >
-                {avatarPreview ? (
-                  <>
-                    <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setAvatarFile(null);
-                        setAvatarPreview(null);
-                      }}
-                      className="absolute top-0 right-0 p-1 rounded-full bg-black/50 text-white hover:bg-black/70"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </>
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground group-hover:text-foreground transition-colors">
-                    <ImagePlus className="w-6 h-6" />
-                  </div>
-                )}
-              </div>
-              <span className="text-sm text-muted-foreground">Click to change group avatar</span>
-            </div>
-            <input
-              ref={avatarInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleAvatarChange}
               className="hidden"
             />
           </div>
