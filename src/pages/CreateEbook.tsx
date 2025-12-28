@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Plus, Trash2, GripVertical, Upload, Save, Send, Loader2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Plus, Trash2, Upload, Save, Send, Loader2, FileText, X } from 'lucide-react';
 import Header from '@/components/Header';
 import ParticleBackground from '@/components/ParticleBackground';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { GENRE_LABELS, EbookGenre } from '@/hooks/useEbooks';
+
+type ContentType = 'chapters' | 'pdf';
 
 interface ChapterDraft {
   id: string;
@@ -27,17 +29,22 @@ const CreateEbook = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [genre, setGenre] = useState<EbookGenre>('other');
   const [coverUrl, setCoverUrl] = useState('');
   const [coverPreview, setCoverPreview] = useState('');
+  const [contentType, setContentType] = useState<ContentType>('chapters');
+  const [pdfUrl, setPdfUrl] = useState('');
+  const [pdfName, setPdfName] = useState('');
   const [chapters, setChapters] = useState<ChapterDraft[]>([
     { id: crypto.randomUUID(), title: '', content: '', order: 1 }
   ]);
   const [activeChapter, setActiveChapter] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingPdf, setIsUploadingPdf] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
 
@@ -80,6 +87,65 @@ const CreateEbook = () => {
     setCoverUrl(publicUrl);
     setCoverPreview(URL.createObjectURL(file));
     setIsUploading(false);
+  };
+
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (file.size > 50 * 1024 * 1024) {
+      toast({
+        title: 'File too large',
+        description: 'PDF must be less than 50MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (file.type !== 'application/pdf') {
+      toast({
+        title: 'Invalid file type',
+        description: 'Please upload a PDF file',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsUploadingPdf(true);
+    
+    const fileName = `${user.id}/${Date.now()}.pdf`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('ebook-pdfs')
+      .upload(fileName, file);
+
+    if (uploadError) {
+      toast({
+        title: 'Upload failed',
+        description: 'Could not upload PDF file',
+        variant: 'destructive',
+      });
+      setIsUploadingPdf(false);
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('ebook-pdfs')
+      .getPublicUrl(fileName);
+
+    setPdfUrl(publicUrl);
+    setPdfName(file.name);
+    setIsUploadingPdf(false);
+    
+    toast({
+      title: 'PDF uploaded',
+      description: 'Your PDF has been uploaded successfully',
+    });
+  };
+
+  const removePdf = () => {
+    setPdfUrl('');
+    setPdfName('');
   };
 
   const addChapter = () => {
@@ -129,14 +195,25 @@ const CreateEbook = () => {
       return false;
     }
 
-    const hasEmptyChapter = chapters.some(ch => !ch.title.trim() || !ch.content.trim());
-    if (hasEmptyChapter) {
+    if (contentType === 'pdf' && !pdfUrl) {
       toast({
-        title: 'Incomplete chapters',
-        description: 'Please fill in all chapter titles and content',
+        title: 'PDF required',
+        description: 'Please upload a PDF file',
         variant: 'destructive',
       });
       return false;
+    }
+
+    if (contentType === 'chapters') {
+      const hasEmptyChapter = chapters.some(ch => !ch.title.trim() || !ch.content.trim());
+      if (hasEmptyChapter) {
+        toast({
+          title: 'Incomplete chapters',
+          description: 'Please fill in all chapter titles and content',
+          variant: 'destructive',
+        });
+        return false;
+      }
     }
 
     return true;
@@ -157,6 +234,7 @@ const CreateEbook = () => {
         title: title.trim(),
         description: description.trim() || null,
         cover_url: coverUrl || null,
+        pdf_url: contentType === 'pdf' ? pdfUrl : null,
         genre,
         status: publish ? 'published' : 'draft',
       })
@@ -173,26 +251,28 @@ const CreateEbook = () => {
       return;
     }
 
-    // Create chapters
-    const { error: chaptersError } = await supabase
-      .from('ebook_chapters')
-      .insert(
-        chapters.map(ch => ({
-          ebook_id: ebook.id,
-          title: ch.title.trim(),
-          content: ch.content,
-          chapter_order: ch.order,
-        }))
-      );
+    // Create chapters only if content type is chapters
+    if (contentType === 'chapters') {
+      const { error: chaptersError } = await supabase
+        .from('ebook_chapters')
+        .insert(
+          chapters.map(ch => ({
+            ebook_id: ebook.id,
+            title: ch.title.trim(),
+            content: ch.content,
+            chapter_order: ch.order,
+          }))
+        );
 
-    if (chaptersError) {
-      toast({
-        title: 'Error',
-        description: 'Could not create chapters',
-        variant: 'destructive',
-      });
-      setLoading(false);
-      return;
+      if (chaptersError) {
+        toast({
+          title: 'Error',
+          description: 'Could not create chapters',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
     }
 
     toast({
@@ -329,60 +409,151 @@ const CreateEbook = () => {
                 </div>
               </div>
 
-              {/* Right: Chapters */}
+              {/* Right: Content */}
               <div className="md:col-span-2">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold">Chapters</h2>
-                  <Button variant="outline" size="sm" onClick={addChapter}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Chapter
-                  </Button>
+                {/* Content Type Toggle */}
+                <div className="mb-6">
+                  <label className="text-sm font-medium mb-2 block">Content Type</label>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={contentType === 'chapters' ? 'default' : 'outline'}
+                      onClick={() => setContentType('chapters')}
+                      className="flex-1"
+                    >
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Write Chapters
+                    </Button>
+                    <Button
+                      variant={contentType === 'pdf' ? 'default' : 'outline'}
+                      onClick={() => setContentType('pdf')}
+                      className="flex-1"
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      Upload PDF
+                    </Button>
+                  </div>
                 </div>
 
-                <Tabs value={String(activeChapter)} onValueChange={(v) => setActiveChapter(Number(v))}>
-                  <TabsList className="flex flex-wrap h-auto gap-1 bg-transparent p-0 mb-4">
-                    {chapters.map((chapter, index) => (
-                      <TabsTrigger
-                        key={chapter.id}
-                        value={String(index)}
-                        className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                      >
-                        Ch. {index + 1}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-
-                  {chapters.map((chapter, index) => (
-                    <TabsContent key={chapter.id} value={String(index)} className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Input
-                          placeholder="Chapter title..."
-                          value={chapter.title}
-                          onChange={(e) => updateChapter(index, 'title', e.target.value)}
-                          className="flex-1"
-                        />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeChapter(index)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                {contentType === 'pdf' ? (
+                  <div className="space-y-4">
+                    <input
+                      type="file"
+                      ref={pdfInputRef}
+                      onChange={handlePdfUpload}
+                      accept="application/pdf"
+                      className="hidden"
+                    />
+                    
+                    {pdfUrl ? (
+                      <div className="border border-border rounded-xl p-6 bg-secondary/30">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center">
+                              <FileText className="w-6 h-6 text-primary" />
+                            </div>
+                            <div>
+                              <p className="font-medium">{pdfName}</p>
+                              <p className="text-sm text-muted-foreground">PDF uploaded successfully</p>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={removePdf}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <X className="w-5 h-5" />
+                          </Button>
+                        </div>
+                        <div className="mt-4">
+                          <a
+                            href={pdfUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline"
+                          >
+                            Preview PDF →
+                          </a>
+                        </div>
                       </div>
-                      <Textarea
-                        placeholder="Write your chapter content here... (Markdown supported)"
-                        value={chapter.content}
-                        onChange={(e) => updateChapter(index, 'content', e.target.value)}
-                        rows={16}
-                        className="font-mono text-sm"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Tip: You can use Markdown for formatting (headers, lists, bold, italic, etc.)
-                      </p>
-                    </TabsContent>
-                  ))}
-                </Tabs>
+                    ) : (
+                      <button
+                        onClick={() => pdfInputRef.current?.click()}
+                        disabled={isUploadingPdf}
+                        className="w-full py-16 rounded-xl border-2 border-dashed border-border hover:border-primary transition-colors flex flex-col items-center justify-center bg-secondary/30"
+                      >
+                        {isUploadingPdf ? (
+                          <>
+                            <Loader2 className="w-12 h-12 mb-3 animate-spin text-muted-foreground" />
+                            <span className="text-muted-foreground">Uploading PDF...</span>
+                          </>
+                        ) : (
+                          <>
+                            <FileText className="w-12 h-12 mb-3 text-muted-foreground" />
+                            <span className="text-lg font-medium mb-1">Upload PDF eBook</span>
+                            <span className="text-sm text-muted-foreground">Click to browse or drag and drop</span>
+                            <span className="text-xs text-muted-foreground mt-2">Maximum file size: 50MB</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-lg font-semibold">Chapters</h2>
+                      <Button variant="outline" size="sm" onClick={addChapter}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Chapter
+                      </Button>
+                    </div>
+
+                    <Tabs value={String(activeChapter)} onValueChange={(v) => setActiveChapter(Number(v))}>
+                      <TabsList className="flex flex-wrap h-auto gap-1 bg-transparent p-0 mb-4">
+                        {chapters.map((chapter, index) => (
+                          <TabsTrigger
+                            key={chapter.id}
+                            value={String(index)}
+                            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                          >
+                            Ch. {index + 1}
+                          </TabsTrigger>
+                        ))}
+                      </TabsList>
+
+                      {chapters.map((chapter, index) => (
+                        <TabsContent key={chapter.id} value={String(index)} className="space-y-4">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              placeholder="Chapter title..."
+                              value={chapter.title}
+                              onChange={(e) => updateChapter(index, 'title', e.target.value)}
+                              className="flex-1"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeChapter(index)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          <Textarea
+                            placeholder="Write your chapter content here... (Markdown supported)"
+                            value={chapter.content}
+                            onChange={(e) => updateChapter(index, 'content', e.target.value)}
+                            rows={16}
+                            className="font-mono text-sm"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Tip: You can use Markdown for formatting (headers, lists, bold, italic, etc.)
+                          </p>
+                        </TabsContent>
+                      ))}
+                    </Tabs>
+                  </>
+                )}
               </div>
             </div>
 

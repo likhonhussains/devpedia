@@ -16,6 +16,7 @@ export interface Ebook {
   title: string;
   description: string | null;
   cover_url: string | null;
+  pdf_url: string | null;
   genre: EbookGenre;
   status: EbookStatus;
   views_count: number;

@@ -319,6 +319,7 @@ export type Database = {
           genre: Database["public"]["Enums"]["ebook_genre"]
           id: string
           likes_count: number
+          pdf_url: string | null
           reviews_count: number
           status: Database["public"]["Enums"]["ebook_status"]
           title: string
@@ -334,6 +335,7 @@ export type Database = {
           genre?: Database["public"]["Enums"]["ebook_genre"]
           id?: string
           likes_count?: number
+          pdf_url?: string | null
           reviews_count?: number
           status?: Database["public"]["Enums"]["ebook_status"]
           title: string
@@ -349,6 +351,7 @@ export type Database = {
           genre?: Database["public"]["Enums"]["ebook_genre"]
           id?: string
           likes_count?: number
+          pdf_url?: string | null
           reviews_count?: number
           status?: Database["public"]["Enums"]["ebook_status"]
           title?: string
