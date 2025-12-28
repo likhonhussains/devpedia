@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -17,7 +17,8 @@ import {
   Loader2,
   Edit,
   User,
-  TrendingUp
+  TrendingUp,
+  Mic
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ParticleBackground from '@/components/ParticleBackground';
@@ -29,12 +30,15 @@ import { useLikePost } from '@/hooks/useLikePost';
 import { formatDistanceToNow, format } from 'date-fns';
 import ShareDropdown from '@/components/ShareDropdown';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import VoiceRecorder from '@/components/VoiceRecorder';
+import VoiceNotePlayer from '@/components/VoiceNotePlayer';
 
 const Article = () => {
   const { slug } = useParams();
   const { user, profile } = useAuth();
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [newComment, setNewComment] = useState('');
+  const [isRecordingMode, setIsRecordingMode] = useState(false);
 
   // Fetch post data from database
   const { data: post, isLoading: postLoading, error: postError } = useQuery({
@@ -93,8 +97,13 @@ const Article = () => {
     enabled: !!post,
   });
 
-  const { comments, isLoading: commentsLoading, addComment, isAddingComment } = useComments(slug || '');
+  const { comments, isLoading: commentsLoading, addComment, addVoiceComment, isAddingComment } = useComments(slug || '');
   const { isLiked, toggleLike } = useLikePost(slug || '');
+
+  const handleVoiceNoteReady = (audioUrl: string, transcription: string) => {
+    addVoiceComment(audioUrl, transcription);
+    setIsRecordingMode(false);
+  };
 
   const handleAddComment = () => {
     if (!newComment.trim() || !user) return;
@@ -487,40 +496,75 @@ const Article = () => {
 
                 {/* Add Comment */}
                 {user ? (
-                  <div className="flex gap-4 mb-8 p-4 rounded-xl bg-white/10 dark:bg-white/10 backdrop-blur-lg border border-white/20">
-                    <Avatar className="w-10 h-10 border border-border flex-shrink-0">
-                      <AvatarImage 
-                        src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
-                        alt="Your avatar"
-                      />
-                      <AvatarFallback>
-                        <User className="w-4 h-4" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 space-y-3">
-                      <textarea
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
-                        placeholder="Share your thoughts..."
-                        rows={3}
-                        className="w-full bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-lg p-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none border border-white/20"
-                      />
-                      <div className="flex justify-end">
-                        <Button
-                          onClick={handleAddComment}
-                          disabled={!newComment.trim() || isAddingComment}
-                          size="sm"
-                          className="gap-2"
+                  <div className="mb-8 p-4 rounded-xl bg-white/10 dark:bg-white/10 backdrop-blur-lg border border-white/20">
+                    <AnimatePresence mode="wait">
+                      {isRecordingMode ? (
+                        <motion.div
+                          key="voice"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
                         >
-                          {isAddingComment ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Send className="w-4 h-4" />
-                          )}
-                          Post Comment
-                        </Button>
-                      </div>
-                    </div>
+                          <VoiceRecorder
+                            onVoiceNoteReady={handleVoiceNoteReady}
+                            onCancel={() => setIsRecordingMode(false)}
+                            isSubmitting={isAddingComment}
+                          />
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="text"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="flex gap-4"
+                        >
+                          <Avatar className="w-10 h-10 border border-border flex-shrink-0">
+                            <AvatarImage 
+                              src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
+                              alt="Your avatar"
+                            />
+                            <AvatarFallback>
+                              <User className="w-4 h-4" />
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 space-y-3">
+                            <textarea
+                              value={newComment}
+                              onChange={(e) => setNewComment(e.target.value)}
+                              placeholder="Share your thoughts..."
+                              rows={3}
+                              className="w-full bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-lg p-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none border border-white/20"
+                            />
+                            <div className="flex items-center justify-between">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setIsRecordingMode(true)}
+                                className="gap-1.5"
+                              >
+                                <Mic className="w-4 h-4" />
+                                Voice Note
+                              </Button>
+                              <Button
+                                onClick={handleAddComment}
+                                disabled={!newComment.trim() || isAddingComment}
+                                size="sm"
+                                className="gap-2"
+                              >
+                                {isAddingComment ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Send className="w-4 h-4" />
+                                )}
+                                Post Comment
+                              </Button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 ) : (
                   <div className="mb-8 p-6 rounded-xl bg-white/10 dark:bg-white/10 backdrop-blur-lg border border-white/20 text-center">
@@ -546,11 +590,11 @@ const Article = () => {
                         transition={{ delay: index * 0.05 }}
                         className="flex gap-4 p-4 rounded-xl hover:bg-white/10 transition-colors"
                       >
-                        <Link to={`/profile/${comment.profiles?.username || 'unknown'}`} className="flex-shrink-0">
+                        <Link to={`/profile/${comment.profile?.username || comment.profiles?.username || 'unknown'}`} className="flex-shrink-0">
                           <Avatar className="w-10 h-10 border border-border hover:border-primary transition-colors">
                             <AvatarImage 
-                              src={comment.profiles?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.user_id}`}
-                              alt={comment.profiles?.display_name || 'User'}
+                              src={comment.profile?.avatar_url || comment.profiles?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.user_id}`}
+                              alt={comment.profile?.display_name || comment.profiles?.display_name || 'User'}
                             />
                             <AvatarFallback>
                               <User className="w-4 h-4" />
@@ -560,18 +604,31 @@ const Article = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2">
                             <Link
-                              to={`/profile/${comment.profiles?.username || 'unknown'}`}
+                              to={`/profile/${comment.profile?.username || comment.profiles?.username || 'unknown'}`}
                               className="font-semibold text-sm hover:text-primary transition-colors"
                             >
-                              {comment.profiles?.display_name || 'Unknown User'}
+                              {comment.profile?.display_name || comment.profiles?.display_name || 'Unknown User'}
                             </Link>
                             <span className="text-xs text-muted-foreground">
                               {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                             </span>
+                            {comment.is_voice_note && (
+                              <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                                🎙️ Voice
+                              </span>
+                            )}
                           </div>
-                          <p className="text-sm text-foreground/85 leading-relaxed">
-                            {comment.content}
-                          </p>
+                          
+                          {comment.is_voice_note && comment.audio_url ? (
+                            <VoiceNotePlayer 
+                              audioUrl={comment.audio_url} 
+                              transcription={comment.transcription || comment.content} 
+                            />
+                          ) : (
+                            <p className="text-sm text-foreground/85 leading-relaxed">
+                              {comment.content}
+                            </p>
+                          )}
                           <button className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground hover:text-primary transition-colors">
                             <Heart className="w-3.5 h-3.5" />
                             <span>{comment.likes_count || 0} likes</span>
