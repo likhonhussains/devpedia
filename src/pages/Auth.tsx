@@ -1,11 +1,12 @@
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, ArrowRight, Eye, EyeOff, Camera, MapPin, FileText, Upload } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Eye, EyeOff, Camera, MapPin, FileText, Upload, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { z } from 'zod';
 
 const loginSchema = z.object({
@@ -20,6 +21,7 @@ const signupSchema = z.object({
   displayName: z.string().trim().min(2, 'Display name must be at least 2 characters').max(50, 'Display name must be less than 50 characters'),
   bio: z.string().max(160, 'Bio must be less than 160 characters').optional(),
   location: z.string().max(100, 'Location must be less than 100 characters').optional(),
+  gender: z.string().optional(),
 });
 
 const Auth = () => {
@@ -41,6 +43,7 @@ const Auth = () => {
     displayName: '',
     bio: '',
     location: '',
+    gender: '',
   });
 
   if (user) {
@@ -181,12 +184,12 @@ const Auth = () => {
               avatarUrl = await uploadAvatar(newUser.id);
             }
             
-            // Update profile with bio, location, and avatar
             await supabase
               .from('profiles')
               .update({
                 bio: formData.bio || null,
                 location: formData.location || null,
+                gender: formData.gender || null,
                 ...(avatarUrl && { avatar_url: avatarUrl }),
               })
               .eq('user_id', newUser.id);
@@ -437,6 +440,28 @@ const Auth = () => {
         </div>
       </div>
 
+      {/* Gender */}
+      <div>
+        <label className="text-sm font-medium mb-2 block">Gender</label>
+        <div className="relative">
+          <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10 pointer-events-none" />
+          <Select
+            value={formData.gender}
+            onValueChange={(value) => setFormData({ ...formData, gender: value })}
+          >
+            <SelectTrigger className="w-full bg-card border border-border/50 rounded-lg py-2.5 pl-10 pr-4 text-sm focus:border-primary/50 transition-colors h-auto">
+              <SelectValue placeholder="Select gender" />
+            </SelectTrigger>
+            <SelectContent className="bg-card border border-border">
+              <SelectItem value="male">Male</SelectItem>
+              <SelectItem value="female">Female</SelectItem>
+              <SelectItem value="non-binary">Non-binary</SelectItem>
+              <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       {/* Action Buttons */}
       <div className="flex gap-3 mt-6">
         <Button
@@ -520,7 +545,7 @@ const Auth = () => {
                   setStep(1);
                   setAvatarFile(null);
                   setAvatarPreview(null);
-                  setFormData({ email: '', password: '', username: '', displayName: '', bio: '', location: '' });
+                  setFormData({ email: '', password: '', username: '', displayName: '', bio: '', location: '', gender: '' });
                 }}
                 className="text-primary hover:underline ml-1 font-medium"
               >
