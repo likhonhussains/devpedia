@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LogOut, User, History, MessageCircle, Users, Trophy, Award, Menu, BookOpen, UsersRound, Globe, UserCheck, Library, BookMarked } from 'lucide-react';
+import { LogOut, User, History, MessageCircle, Users, Trophy, Award, Menu, BookOpen, UsersRound, Globe, UserCheck, Library, BookMarked, Settings, ChevronDown, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useMessages } from '@/hooks/useMessages';
 import NotificationBell from '@/components/NotificationBell';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import logoIcon from '@/assets/logo.png';
 
 const Header = () => {
@@ -140,28 +140,92 @@ const Header = () => {
                     </DropdownMenuContent>
                   </DropdownMenu>
 
-                  <Link
-                    to={`/profile/${profile?.username || 'me'}`}
-                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-secondary/50 transition-colors"
-                  >
-                    <img
-                      src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
-                      alt="Avatar"
-                      className="w-6 h-6 rounded-full ring-1 ring-border"
-                    />
-                    <span className="text-sm font-medium hidden lg:inline max-w-24 truncate">
-                      {profile?.display_name}
-                    </span>
-                  </Link>
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="w-8 h-8 text-muted-foreground hover:text-foreground"
-                    onClick={handleSignOut}
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </Button>
+                  {/* Profile Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-2 px-2 py-1.5 h-auto hover:bg-secondary/50 group"
+                      >
+                        <div className="relative">
+                          <img
+                            src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
+                            alt="Avatar"
+                            className="w-7 h-7 rounded-full ring-2 ring-primary/20 group-hover:ring-primary/50 transition-all"
+                          />
+                          <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-background" />
+                        </div>
+                        <div className="hidden lg:flex flex-col items-start">
+                          <span className="text-sm font-medium max-w-20 truncate leading-tight">
+                            {profile?.display_name}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground leading-tight">
+                            @{profile?.username}
+                          </span>
+                        </div>
+                        <ChevronDown className="w-3 h-3 text-muted-foreground hidden lg:block" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-64 bg-popover border border-border z-50 p-0 overflow-hidden">
+                      {/* Profile Header */}
+                      <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <img
+                              src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
+                              alt="Avatar"
+                              className="w-12 h-12 rounded-full ring-2 ring-primary/30"
+                            />
+                            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-popover" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold truncate">{profile?.display_name}</p>
+                            <p className="text-sm text-muted-foreground truncate">@{profile?.username}</p>
+                          </div>
+                          <Sparkles className="w-5 h-5 text-primary/60" />
+                        </div>
+                      </div>
+                      
+                      <div className="p-1">
+                        <DropdownMenuItem 
+                          onSelect={() => navigate(`/profile/${profile?.username || 'me'}`)}
+                          className="cursor-pointer gap-3 py-2.5 px-3 rounded-lg"
+                        >
+                          <User className="w-4 h-4 text-muted-foreground" />
+                          <span>View Profile</span>
+                        </DropdownMenuItem>
+                        
+                        <DropdownMenuItem 
+                          onSelect={() => navigate('/achievements')}
+                          className="cursor-pointer gap-3 py-2.5 px-3 rounded-lg"
+                        >
+                          <Award className="w-4 h-4 text-muted-foreground" />
+                          <span>My Achievements</span>
+                        </DropdownMenuItem>
+                        
+                        <DropdownMenuItem 
+                          onSelect={() => navigate('/history')}
+                          className="cursor-pointer gap-3 py-2.5 px-3 rounded-lg"
+                        >
+                          <History className="w-4 h-4 text-muted-foreground" />
+                          <span>Reading History</span>
+                        </DropdownMenuItem>
+                      </div>
+                      
+                      <DropdownMenuSeparator className="my-1" />
+                      
+                      <div className="p-1">
+                        <DropdownMenuItem 
+                          onSelect={handleSignOut}
+                          className="cursor-pointer gap-3 py-2.5 px-3 rounded-lg text-destructive focus:text-destructive focus:bg-destructive/10"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Sign Out</span>
+                        </DropdownMenuItem>
+                      </div>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
                 {/* Mobile Navigation */}
@@ -177,19 +241,23 @@ const Header = () => {
                       <div className="flex flex-col h-full">
                         {/* Profile Section */}
                         <div 
-                          className="p-4 border-b border-border cursor-pointer hover:bg-secondary/50 transition-colors"
+                          className="p-4 border-b border-border cursor-pointer hover:bg-secondary/50 transition-colors bg-gradient-to-br from-primary/10 via-primary/5 to-transparent"
                           onClick={() => handleNavigate(`/profile/${profile?.username || 'me'}`)}
                         >
                           <div className="flex items-center gap-3">
-                            <img
-                              src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
-                              alt="Avatar"
-                              className="w-10 h-10 rounded-full ring-2 ring-border"
-                            />
-                            <div>
-                              <p className="font-medium">{profile?.display_name}</p>
-                              <p className="text-sm text-muted-foreground">@{profile?.username}</p>
+                            <div className="relative">
+                              <img
+                                src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
+                                alt="Avatar"
+                                className="w-12 h-12 rounded-full ring-2 ring-primary/30 shadow-lg"
+                              />
+                              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-background" />
                             </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold truncate">{profile?.display_name}</p>
+                              <p className="text-sm text-muted-foreground truncate">@{profile?.username}</p>
+                            </div>
+                            <Sparkles className="w-5 h-5 text-primary/60" />
                           </div>
                         </div>
 
