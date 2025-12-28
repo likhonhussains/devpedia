@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, BookOpen, Star, Eye, Heart, Bookmark, MessageSquare, ChevronRight, User, Clock, Send, Trash2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Star, Eye, Heart, Bookmark, ChevronRight, Clock, Send, Trash2, FileText, Download, ExternalLink } from 'lucide-react';
 import Header from '@/components/Header';
 import ParticleBackground from '@/components/ParticleBackground';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useEbook, useEbookReviews, useEbookInteractions, GENRE_LABELS, EbookGenre, EbookChapter } from '@/hooks/useEbooks';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -285,12 +284,32 @@ const EbookDetail = () => {
               </div>
 
               <div className="flex flex-wrap gap-3">
-                {chapters.length > 0 && (
+                {/* PDF eBook - show download/view buttons */}
+                {ebook.pdf_url && (
+                  <>
+                    <Button asChild>
+                      <a href={ebook.pdf_url} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Read PDF
+                      </a>
+                    </Button>
+                    <Button variant="outline" asChild>
+                      <a href={ebook.pdf_url} download>
+                        <Download className="w-4 h-4 mr-2" />
+                        Download PDF
+                      </a>
+                    </Button>
+                  </>
+                )}
+                
+                {/* Chapter-based eBook - show start reading button */}
+                {!ebook.pdf_url && chapters.length > 0 && (
                   <Button onClick={() => setSelectedChapter(chapters[0])}>
                     <BookOpen className="w-4 h-4 mr-2" />
                     Start Reading
                   </Button>
                 )}
+                
                 {user && (
                   <>
                     <Button
@@ -313,7 +332,112 @@ const EbookDetail = () => {
             </motion.div>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          {/* Only show tabs if not a PDF-only ebook, or show different content */}
+          {ebook.pdf_url ? (
+            /* PDF eBook - Show embedded viewer and reviews */
+            <div className="space-y-8">
+              {/* PDF Viewer */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass-card rounded-xl overflow-hidden"
+              >
+                <div className="p-4 border-b border-border flex items-center gap-3">
+                  <FileText className="w-5 h-5 text-primary" />
+                  <span className="font-medium">PDF eBook</span>
+                </div>
+                <div className="aspect-[4/3] md:aspect-[16/9]">
+                  <iframe
+                    src={`${ebook.pdf_url}#view=FitH`}
+                    className="w-full h-full"
+                    title={ebook.title}
+                  />
+                </div>
+              </motion.div>
+
+              {/* Reviews Section for PDF */}
+              <div className="space-y-6">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <Star className="w-5 h-5" />
+                  Reviews ({reviews.length})
+                </h2>
+                
+                {/* Add Review */}
+                {user && !userReview && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="glass-card rounded-xl p-6"
+                  >
+                    <h3 className="font-semibold mb-4">Write a Review</h3>
+                    <div className="mb-4">
+                      <label className="text-sm text-muted-foreground mb-2 block">Your Rating</label>
+                      <StarRating rating={reviewRating} onRate={setReviewRating} interactive />
+                    </div>
+                    <Textarea
+                      placeholder="Share your thoughts about this eBook..."
+                      value={reviewContent}
+                      onChange={(e) => setReviewContent(e.target.value)}
+                      className="mb-4"
+                      rows={4}
+                    />
+                    <Button onClick={handleSubmitReview} disabled={isSubmitting || !reviewContent.trim()}>
+                      <Send className="w-4 h-4 mr-2" />
+                      Submit Review
+                    </Button>
+                  </motion.div>
+                )}
+
+                {/* Reviews List */}
+                <div className="space-y-4">
+                  {reviews.length === 0 ? (
+                    <div className="glass-card rounded-xl p-8 text-center text-muted-foreground">
+                      No reviews yet. Be the first to review!
+                    </div>
+                  ) : (
+                    reviews.map((review) => (
+                      <motion.div
+                        key={review.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="glass-card rounded-xl p-6"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarImage src={review.author?.avatar_url || undefined} />
+                              <AvatarFallback>{review.author?.display_name[0] || 'U'}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{review.author?.display_name || 'Unknown'}</p>
+                              <p className="text-sm text-muted-foreground">{formatDate(review.created_at)}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <StarRating rating={review.rating} />
+                            {review.user_id === user?.id && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => deleteReview(review.id)}
+                              >
+                                <Trash2 className="w-4 h-4 text-destructive" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        {review.content && (
+                          <p className="text-muted-foreground">{review.content}</p>
+                        )}
+                      </motion.div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Chapter-based eBook - Show tabs */
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList>
               <TabsTrigger value="chapters" className="gap-2">
                 <BookOpen className="w-4 h-4" />
@@ -427,6 +551,7 @@ const EbookDetail = () => {
               </div>
             </TabsContent>
           </Tabs>
+          )}
         </div>
       </main>
     </div>
