@@ -468,6 +468,62 @@ const Profile = () => {
                 <ProfileCompletion profile={profileData} />
               )}
 
+              {/* Create Post Section (only for own profile) */}
+              {isOwnProfile && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.15 }}
+                  className="glass-card rounded-xl p-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={profileData.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profileData.user_id}`}
+                      alt={profileData.display_name}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                    <Link
+                      to="/create"
+                      className="flex-1 px-4 py-2.5 rounded-full bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors text-sm text-left"
+                    >
+                      What's on your mind, {profileData.display_name.split(' ')[0]}?
+                    </Link>
+                  </div>
+                  
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
+                    <div className="flex items-center gap-1">
+                      <Link
+                        to="/create?type=post"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                      >
+                        <FileText className="w-4 h-4 text-primary" />
+                        <span className="hidden sm:inline">Post</span>
+                      </Link>
+                      <Link
+                        to="/create?type=note"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                      >
+                        <StickyNote className="w-4 h-4 text-amber-500" />
+                        <span className="hidden sm:inline">Note</span>
+                      </Link>
+                      <Link
+                        to="/create?type=video"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                      >
+                        <Video className="w-4 h-4 text-rose-500" />
+                        <span className="hidden sm:inline">Video</span>
+                      </Link>
+                    </div>
+                    <Button asChild size="sm" className="gap-2">
+                      <Link to="/create">
+                        <PenSquare className="w-4 h-4" />
+                        <span className="hidden sm:inline">Create</span>
+                      </Link>
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+
               {/* Content Tabs */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
