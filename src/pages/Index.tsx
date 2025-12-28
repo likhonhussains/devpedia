@@ -91,7 +91,7 @@ const Index = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.15 }}
-                className="mt-4 flex flex-wrap items-center justify-center gap-4"
+                className="mt-4 flex items-center justify-center gap-3"
               >
                 <FeedToggle activeMode={feedMode} onModeChange={setFeedMode} />
                 <SortToggle activeSort={sortMode} onSortChange={setSortMode} />
