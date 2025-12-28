@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen, Plus, Eye, Heart, Star, Edit, Trash2, MoreVertical, FileText, Clock, CheckCircle, Archive } from 'lucide-react';
+import { BookOpen, Plus, Eye, Heart, Star, Edit, Trash2, MoreVertical, FileText, Clock, CheckCircle, Archive, Search, X } from 'lucide-react';
 import Header from '@/components/Header';
 import ParticleBackground from '@/components/ParticleBackground';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -12,6 +14,22 @@ import { useMyEbooks, GENRE_LABELS, EbookGenre, Ebook } from '@/hooks/useEbooks'
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+
+const ALL_GENRES: EbookGenre[] = [
+  'fiction', 'non_fiction', 'technology', 'science', 'self_help', 'business',
+  'biography', 'history', 'fantasy', 'mystery', 'romance', 'horror', 'poetry', 'education', 'other'
+];
+
+type SortOption = 'newest' | 'oldest' | 'title' | 'views' | 'likes' | 'rating';
+
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: 'newest', label: 'Newest First' },
+  { value: 'oldest', label: 'Oldest First' },
+  { value: 'title', label: 'Title A-Z' },
+  { value: 'views', label: 'Most Views' },
+  { value: 'likes', label: 'Most Likes' },
+  { value: 'rating', label: 'Highest Rated' },
+];
 
 const StatusBadge = ({ status }: { status: string }) => {
   const config = {
@@ -151,9 +169,59 @@ const MyEbooks = () => {
   const { ebooks, loading, refetch } = useMyEbooks();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [genreFilter, setGenreFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<SortOption>('newest');
 
-  const publishedEbooks = ebooks.filter(e => e.status === 'published');
-  const draftEbooks = ebooks.filter(e => e.status === 'draft');
+  const filteredAndSortedEbooks = useMemo(() => {
+    let result = [...ebooks];
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(e => 
+        e.title.toLowerCase().includes(query) || 
+        (e.description?.toLowerCase().includes(query))
+      );
+    }
+
+    // Genre filter
+    if (genreFilter !== 'all') {
+      result = result.filter(e => e.genre === genreFilter);
+    }
+
+    // Sorting
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'oldest':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'newest':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'title':
+          return a.title.localeCompare(b.title);
+        case 'views':
+          return b.views_count - a.views_count;
+        case 'likes':
+          return b.likes_count - a.likes_count;
+        case 'rating':
+          return (b.average_rating || 0) - (a.average_rating || 0);
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [ebooks, searchQuery, genreFilter, sortBy]);
+
+  const publishedEbooks = filteredAndSortedEbooks.filter(e => e.status === 'published');
+  const draftEbooks = filteredAndSortedEbooks.filter(e => e.status === 'draft');
+
+  const hasFilters = searchQuery.trim() !== '' || genreFilter !== 'all';
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setGenreFilter('all');
+  };
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -260,6 +328,78 @@ const MyEbooks = () => {
             </Button>
           </motion.div>
 
+          {/* Search and Filters */}
+          {!loading && ebooks.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="mb-6 space-y-4"
+            >
+              <div className="flex flex-col sm:flex-row gap-3">
+                {/* Search */}
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search your eBooks..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 pr-9"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Genre Filter */}
+                <Select value={genreFilter} onValueChange={setGenreFilter}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="All Genres" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Genres</SelectItem>
+                    {ALL_GENRES.map(genre => (
+                      <SelectItem key={genre} value={genre}>
+                        {GENRE_LABELS[genre]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Sort */}
+                <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+                  <SelectTrigger className="w-full sm:w-[160px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SORT_OPTIONS.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Active Filters */}
+              {hasFilters && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">
+                    {filteredAndSortedEbooks.length} of {ebooks.length} eBooks
+                  </span>
+                  <Button variant="ghost" size="sm" onClick={clearFilters} className="h-7 px-2 text-xs">
+                    Clear filters
+                  </Button>
+                </div>
+              )}
+            </motion.div>
+          )}
+
           {loading ? (
             <div className="space-y-4">
               {[1, 2, 3].map(i => (
@@ -294,21 +434,27 @@ const MyEbooks = () => {
           ) : (
             <Tabs defaultValue="all">
               <TabsList>
-                <TabsTrigger value="all">All ({ebooks.length})</TabsTrigger>
+                <TabsTrigger value="all">All ({filteredAndSortedEbooks.length})</TabsTrigger>
                 <TabsTrigger value="published">Published ({publishedEbooks.length})</TabsTrigger>
                 <TabsTrigger value="drafts">Drafts ({draftEbooks.length})</TabsTrigger>
               </TabsList>
 
               <TabsContent value="all" className="mt-6 space-y-4">
-                {ebooks.map(ebook => (
-                  <EbookCard 
-                    key={ebook.id} 
-                    ebook={ebook} 
-                    onDelete={setDeleteId}
-                    onPublish={handlePublish}
-                    onUnpublish={handleUnpublish}
-                  />
-                ))}
+                {filteredAndSortedEbooks.length === 0 ? (
+                  <div className="glass-card rounded-xl p-8 text-center text-muted-foreground">
+                    No eBooks match your search
+                  </div>
+                ) : (
+                  filteredAndSortedEbooks.map(ebook => (
+                    <EbookCard 
+                      key={ebook.id} 
+                      ebook={ebook} 
+                      onDelete={setDeleteId}
+                      onPublish={handlePublish}
+                      onUnpublish={handleUnpublish}
+                    />
+                  ))
+                )}
               </TabsContent>
 
               <TabsContent value="published" className="mt-6 space-y-4">
