@@ -161,10 +161,10 @@ export const useMessages = () => {
       }
     }
 
-    // Create new conversation
+    // Create new conversation with creator_id
     const { data: newConv, error: convError } = await supabase
       .from('conversations')
-      .insert({})
+      .insert({ creator_id: user.id })
       .select()
       .single();
 
