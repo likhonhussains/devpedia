@@ -1,6 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { 
   Plus, 
   Users, 
@@ -316,6 +316,16 @@ const Groups = () => {
   const { user } = useAuth();
   const { groups, groupsLoading, myGroups, myGroupsLoading } = useGroups();
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchParams] = useSearchParams();
+  const filterParam = searchParams.get('filter');
+  const [activeTab, setActiveTab] = useState(filterParam === 'my' && user ? 'my-groups' : 'discover');
+
+  // Update active tab when URL params change
+  useEffect(() => {
+    if (filterParam === 'my' && user) {
+      setActiveTab('my-groups');
+    }
+  }, [filterParam, user]);
 
   const myGroupIds = new Set(myGroups?.map(g => g.id) || []);
 
@@ -370,7 +380,7 @@ const Groups = () => {
           </motion.div>
 
           {/* Tabs */}
-          <Tabs defaultValue={user ? "my-groups" : "discover"} className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="bg-white/10 backdrop-blur-sm border border-white/20 mb-6">
               {user && <TabsTrigger value="my-groups">My Groups</TabsTrigger>}
               <TabsTrigger value="discover">Discover</TabsTrigger>
