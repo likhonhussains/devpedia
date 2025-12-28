@@ -29,6 +29,7 @@ import CreateEbook from "./pages/CreateEbook";
 import MyEbooks from "./pages/MyEbooks";
 import EditEbook from "./pages/EditEbook";
 import EbookAnalytics from "./pages/EbookAnalytics";
+import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,6 +67,7 @@ const App = () => (
                   <Route path="/ebooks/:id/edit" element={<EditEbook />} />
                   <Route path="/my-ebooks" element={<MyEbooks />} />
                   <Route path="/my-ebooks/analytics" element={<EbookAnalytics />} />
+                  <Route path="/notifications" element={<Notifications />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
