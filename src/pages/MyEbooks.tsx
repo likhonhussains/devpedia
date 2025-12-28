@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen, Plus, Eye, Heart, Star, Edit, Trash2, MoreVertical, FileText, Clock, CheckCircle, Archive, Search, X } from 'lucide-react';
+import { BookOpen, Plus, Eye, Heart, Star, Edit, Trash2, MoreVertical, FileText, Clock, CheckCircle, Archive, Search, X, TrendingUp } from 'lucide-react';
 import Header from '@/components/Header';
 import ParticleBackground from '@/components/ParticleBackground';
 import { Button } from '@/components/ui/button';
@@ -320,12 +320,20 @@ const MyEbooks = () => {
               <h1 className="text-3xl font-bold">My eBooks</h1>
               <p className="text-muted-foreground">Manage your published and draft eBooks</p>
             </div>
-            <Button asChild>
-              <Link to="/ebooks/create">
-                <Plus className="w-4 h-4 mr-2" />
-                Create New
-              </Link>
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" asChild>
+                <Link to="/my-ebooks/analytics">
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  Analytics
+                </Link>
+              </Button>
+              <Button asChild>
+                <Link to="/ebooks/create">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create New
+                </Link>
+              </Button>
+            </div>
           </motion.div>
 
           {/* Search and Filters */}
