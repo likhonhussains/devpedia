@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Mic, Square, Loader2, Send, X, Play, Pause } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,11 +19,45 @@ const VoiceRecorder = ({ onVoiceNoteReady, onCancel, isSubmitting }: VoiceRecord
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [duration, setDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [audioLevels, setAudioLevels] = useState<number[]>(new Array(20).fill(0));
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+    };
+  }, []);
+
+  const updateAudioLevels = useCallback(() => {
+    if (!analyserRef.current || !isRecording) return;
+    
+    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+    analyserRef.current.getByteFrequencyData(dataArray);
+    
+    // Sample 20 points from the frequency data
+    const levels: number[] = [];
+    const step = Math.floor(dataArray.length / 20);
+    for (let i = 0; i < 20; i++) {
+      const value = dataArray[i * step] / 255;
+      levels.push(value);
+    }
+    
+    setAudioLevels(levels);
+    animationFrameRef.current = requestAnimationFrame(updateAudioLevels);
+  }, [isRecording]);
 
   const startRecording = useCallback(async () => {
     try {
@@ -34,6 +68,15 @@ const VoiceRecorder = ({ onVoiceNoteReady, onCancel, isSubmitting }: VoiceRecord
           sampleRate: 44100
         } 
       });
+      
+      // Set up audio analysis for waveform
+      const audioContext = new AudioContext();
+      audioContextRef.current = audioContext;
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      analyserRef.current = analyser;
       
       const mediaRecorder = new MediaRecorder(stream, { 
         mimeType: 'audio/webm;codecs=opus' 
@@ -56,11 +99,22 @@ const VoiceRecorder = ({ onVoiceNoteReady, onCancel, isSubmitting }: VoiceRecord
         
         // Stop all tracks
         stream.getTracks().forEach(track => track.stop());
+        
+        // Clean up audio context
+        if (audioContextRef.current) {
+          audioContextRef.current.close();
+          audioContextRef.current = null;
+        }
+        analyserRef.current = null;
+        setAudioLevels(new Array(20).fill(0));
       };
       
       mediaRecorder.start(100);
       setIsRecording(true);
       setDuration(0);
+      
+      // Start audio level visualization
+      animationFrameRef.current = requestAnimationFrame(updateAudioLevels);
       
       // Timer for duration
       timerRef.current = setInterval(() => {
@@ -75,7 +129,7 @@ const VoiceRecorder = ({ onVoiceNoteReady, onCancel, isSubmitting }: VoiceRecord
         variant: 'destructive',
       });
     }
-  }, [toast]);
+  }, [toast, updateAudioLevels]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
@@ -85,6 +139,11 @@ const VoiceRecorder = ({ onVoiceNoteReady, onCancel, isSubmitting }: VoiceRecord
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
+      }
+      
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
       }
     }
   }, [isRecording]);
@@ -186,14 +245,34 @@ const VoiceRecorder = ({ onVoiceNoteReady, onCancel, isSubmitting }: VoiceRecord
                 <motion.div 
                   animate={{ scale: [1, 1.2, 1] }}
                   transition={{ repeat: Infinity, duration: 1 }}
-                  className="w-3 h-3 rounded-full bg-red-500"
+                  className="w-3 h-3 rounded-full bg-destructive shrink-0"
                 />
-                <span className="text-sm font-mono">{formatDuration(duration)}</span>
+                <span className="text-sm font-mono shrink-0">{formatDuration(duration)}</span>
+                
+                {/* Waveform Visualization */}
+                <div className="flex-1 flex items-center justify-center gap-0.5 h-8 px-2">
+                  {audioLevels.map((level, index) => (
+                    <motion.div
+                      key={index}
+                      className="w-1 bg-primary rounded-full"
+                      animate={{ 
+                        height: Math.max(4, level * 28),
+                        opacity: 0.4 + level * 0.6
+                      }}
+                      transition={{ 
+                        type: "spring",
+                        stiffness: 300,
+                        damping: 20
+                      }}
+                    />
+                  ))}
+                </div>
+                
                 <Button 
                   size="sm" 
                   variant="destructive" 
                   onClick={stopRecording}
-                  className="ml-auto"
+                  className="shrink-0"
                 >
                   <Square className="w-4 h-4 mr-1" />
                   Stop
