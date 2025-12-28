@@ -32,10 +32,14 @@ const Header = () => {
   const menuItems = [
     { icon: Award, label: 'Achievements', path: '/achievements' },
     { icon: Trophy, label: 'Leaderboard', path: '/leaderboard' },
-    { icon: UsersRound, label: 'Groups', path: '/groups' },
     { icon: Users, label: 'People', path: '/users' },
     { icon: History, label: 'History', path: '/history' },
     { icon: MessageCircle, label: 'Messages', path: '/messages', badge: unreadCount },
+  ];
+
+  const groupItems = [
+    { label: 'Browse Groups', path: '/groups' },
+    { label: 'My Groups', path: '/groups?filter=my' },
   ];
 
   const ebookItems = [
@@ -84,6 +88,27 @@ const Header = () => {
                     </Button>
                   ))}
 
+                  {/* Groups Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-2 text-muted-foreground hover:text-foreground"
+                      >
+                        <UsersRound className="w-4 h-4" />
+                        <span className="hidden lg:inline">Groups</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-popover">
+                      {groupItems.map((item) => (
+                        <DropdownMenuItem key={item.path} onClick={() => navigate(item.path)}>
+                          {item.label}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
                   {/* eBooks Dropdown */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -96,7 +121,7 @@ const Header = () => {
                         <span className="hidden lg:inline">eBooks</span>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" className="bg-popover">
                       {ebookItems.map((item) => (
                         <DropdownMenuItem key={item.path} onClick={() => navigate(item.path)}>
                           {item.label}
@@ -175,6 +200,20 @@ const Header = () => {
                               )}
                             </button>
                           ))}
+                          {/* Groups submenu in mobile */}
+                          <div className="px-4 py-2">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Groups</p>
+                            {groupItems.map((item) => (
+                              <button
+                                key={item.path}
+                                className="w-full flex items-center gap-3 px-2 py-2 text-left hover:bg-secondary/50 transition-colors rounded-md"
+                                onClick={() => handleNavigate(item.path)}
+                              >
+                                <UsersRound className="w-4 h-4 text-muted-foreground" />
+                                <span className="text-sm">{item.label}</span>
+                              </button>
+                            ))}
+                          </div>
                           {/* eBooks submenu in mobile */}
                           <div className="px-4 py-2">
                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">eBooks</p>
