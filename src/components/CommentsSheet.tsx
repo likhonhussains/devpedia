@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { Send, Trash2, MessageCircle } from 'lucide-react';
+import { Send, Trash2, MessageCircle, Mic } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sheet,
@@ -17,6 +17,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import MentionInput from './MentionInput';
 import MentionText from './MentionText';
+import VoiceRecorder from './VoiceRecorder';
+import VoiceNotePlayer from './VoiceNotePlayer';
 
 interface CommentsSheetProps {
   postId: string;
@@ -27,7 +29,8 @@ interface CommentsSheetProps {
 const CommentsSheet = ({ postId, postTitle, commentsCount }: CommentsSheetProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [newComment, setNewComment] = useState('');
-  const { comments, isLoading, addComment, deleteComment, isAddingComment } = useComments(postId);
+  const [isRecordingMode, setIsRecordingMode] = useState(false);
+  const { comments, isLoading, addComment, addVoiceComment, deleteComment, isAddingComment } = useComments(postId);
   const { user } = useAuth();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -35,6 +38,11 @@ const CommentsSheet = ({ postId, postTitle, commentsCount }: CommentsSheetProps)
     if (!newComment.trim()) return;
     addComment(newComment);
     setNewComment('');
+  };
+
+  const handleVoiceNoteReady = (audioUrl: string, transcription: string) => {
+    addVoiceComment(audioUrl, transcription);
+    setIsRecordingMode(false);
   };
 
   return (
@@ -103,6 +111,11 @@ const CommentsSheet = ({ postId, postTitle, commentsCount }: CommentsSheetProps)
                         <span className="text-xs text-muted-foreground">
                           {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                         </span>
+                        {comment.is_voice_note && (
+                          <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                            🎙️ Voice
+                          </span>
+                        )}
                         {user?.id === comment.user_id && (
                           <button
                             onClick={() => deleteComment(comment.id)}
@@ -112,9 +125,19 @@ const CommentsSheet = ({ postId, postTitle, commentsCount }: CommentsSheetProps)
                           </button>
                         )}
                       </div>
-                      <p className="text-sm text-foreground/90 mt-1 break-words">
-                        <MentionText text={comment.content} />
-                      </p>
+                      
+                      {comment.is_voice_note && comment.audio_url ? (
+                        <div className="mt-2">
+                          <VoiceNotePlayer 
+                            audioUrl={comment.audio_url} 
+                            transcription={comment.transcription || comment.content} 
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-sm text-foreground/90 mt-1 break-words">
+                          <MentionText text={comment.content} />
+                        </p>
+                      )}
                     </div>
                   </motion.div>
                 ))}
@@ -124,30 +147,67 @@ const CommentsSheet = ({ postId, postTitle, commentsCount }: CommentsSheetProps)
         </ScrollArea>
 
         {user ? (
-          <form onSubmit={handleSubmit} className="mt-4 pt-4 border-t border-border">
-            <div className="flex gap-2">
-              <MentionInput
-                value={newComment}
-                onChange={setNewComment}
-                placeholder="Write a comment... Use @username to mention someone"
-                minHeight="80px"
-                maxLength={1000}
-              />
-            </div>
-            <div className="flex justify-between items-center mt-2">
-              <span className="text-xs text-muted-foreground">
-                {newComment.length}/1000
-              </span>
-              <Button
-                type="submit"
-                size="sm"
-                disabled={!newComment.trim() || isAddingComment}
-              >
-                <Send className="w-4 h-4 mr-1" />
-                {isAddingComment ? 'Posting...' : 'Post'}
-              </Button>
-            </div>
-          </form>
+          <div className="mt-4 pt-4 border-t border-border">
+            <AnimatePresence mode="wait">
+              {isRecordingMode ? (
+                <motion.div
+                  key="voice"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                >
+                  <VoiceRecorder
+                    onVoiceNoteReady={handleVoiceNoteReady}
+                    onCancel={() => setIsRecordingMode(false)}
+                    isSubmitting={isAddingComment}
+                  />
+                </motion.div>
+              ) : (
+                <motion.form
+                  key="text"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  onSubmit={handleSubmit}
+                >
+                  <div className="flex gap-2">
+                    <MentionInput
+                      value={newComment}
+                      onChange={setNewComment}
+                      placeholder="Write a comment... Use @username to mention"
+                      minHeight="80px"
+                      maxLength={1000}
+                    />
+                  </div>
+                  <div className="flex justify-between items-center mt-2">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setIsRecordingMode(true)}
+                        className="gap-1.5"
+                      >
+                        <Mic className="w-4 h-4" />
+                        Voice Note
+                      </Button>
+                      <span className="text-xs text-muted-foreground">
+                        {newComment.length}/1000
+                      </span>
+                    </div>
+                    <Button
+                      type="submit"
+                      size="sm"
+                      disabled={!newComment.trim() || isAddingComment}
+                    >
+                      <Send className="w-4 h-4 mr-1" />
+                      {isAddingComment ? 'Posting...' : 'Post'}
+                    </Button>
+                  </div>
+                </motion.form>
+              )}
+            </AnimatePresence>
+          </div>
         ) : (
           <div className="mt-4 pt-4 border-t border-border text-center">
             <p className="text-sm text-muted-foreground">

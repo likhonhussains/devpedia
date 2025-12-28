@@ -62,13 +62,30 @@ export const useComments = (postId: string) => {
   });
 
   const addCommentMutation = useMutation({
-    mutationFn: async (content: string) => {
+    mutationFn: async ({ 
+      content, 
+      audioUrl, 
+      transcription, 
+      isVoiceNote 
+    }: { 
+      content: string; 
+      audioUrl?: string; 
+      transcription?: string; 
+      isVoiceNote?: boolean 
+    }) => {
       if (!user) throw new Error('Must be logged in to comment');
-      if (!content.trim()) throw new Error('Comment cannot be empty');
+      if (!content.trim() && !audioUrl) throw new Error('Comment cannot be empty');
 
       const { error } = await supabase
         .from('comments')
-        .insert({ post_id: postId, user_id: user.id, content: content.trim() });
+        .insert({ 
+          post_id: postId, 
+          user_id: user.id, 
+          content: content.trim() || transcription || '',
+          audio_url: audioUrl || null,
+          transcription: transcription || null,
+          is_voice_note: isVoiceNote || false
+        });
 
       if (error) throw error;
 
@@ -119,7 +136,14 @@ export const useComments = (postId: string) => {
   return {
     comments: comments || [],
     isLoading,
-    addComment: (content: string) => addCommentMutation.mutate(content),
+    addComment: (content: string) => addCommentMutation.mutate({ content }),
+    addVoiceComment: (audioUrl: string, transcription: string) => 
+      addCommentMutation.mutate({ 
+        content: transcription, 
+        audioUrl, 
+        transcription, 
+        isVoiceNote: true 
+      }),
     deleteComment: (commentId: string) => deleteCommentMutation.mutate(commentId),
     isAddingComment: addCommentMutation.isPending,
   };
