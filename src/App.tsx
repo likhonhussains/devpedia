@@ -19,6 +19,9 @@ import Drafts from "./pages/Drafts";
 import Achievements from "./pages/Achievements";
 import Groups from "./pages/Groups";
 import GroupDetail from "./pages/GroupDetail";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
+import Api from "./pages/Api";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +49,9 @@ const App = () => (
                 <Route path="/leaderboard" element={<Leaderboard />} />
                 <Route path="/groups" element={<Groups />} />
                 <Route path="/groups/:id" element={<GroupDetail />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/api" element={<Api />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

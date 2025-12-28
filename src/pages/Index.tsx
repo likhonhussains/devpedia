@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
@@ -123,9 +124,9 @@ const Index = () => {
         <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-4 text-sm text-muted-foreground">
           <p>© 2026 Basic Comet</p>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-foreground transition-colors">Terms</a>
-            <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
-            <a href="#" className="hover:text-foreground transition-colors">API</a>
+            <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+            <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
+            <Link to="/api" className="hover:text-foreground transition-colors">API</Link>
           </div>
         </div>
       </footer>
