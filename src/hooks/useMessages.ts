@@ -140,20 +140,39 @@ export const useMessages = () => {
   const getOrCreateConversation = async (otherUserId: string): Promise<string | null> => {
     if (!user) return null;
 
+    // Ensure we have an auth session (prevents RLS failures when client is effectively anonymous)
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      await supabase.auth.refreshSession();
+      const { data: refreshed } = await supabase.auth.getSession();
+      if (!refreshed.session) {
+        console.error('No active session found; cannot create conversation.');
+        return null;
+      }
+    }
+
     // Check if conversation already exists
-    const { data: myConversations } = await supabase
+    const { data: myConversations, error: myConversationsError } = await supabase
       .from('conversation_participants')
       .select('conversation_id')
       .eq('user_id', user.id);
 
+    if (myConversationsError) {
+      console.error('Error loading user conversations:', myConversationsError);
+    }
+
     if (myConversations) {
       for (const conv of myConversations) {
-        const { data: otherParticipant } = await supabase
+        const { data: otherParticipant, error: otherParticipantError } = await supabase
           .from('conversation_participants')
           .select('user_id')
           .eq('conversation_id', conv.conversation_id)
           .eq('user_id', otherUserId)
           .maybeSingle();
+
+        if (otherParticipantError) {
+          console.error('Error checking existing conversation participant:', otherParticipantError);
+        }
 
         if (otherParticipant) {
           return conv.conversation_id;
