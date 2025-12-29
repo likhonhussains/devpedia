@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, MessageCircle, Send, Search, Paperclip, FileText, X, Loader2, Users, Plus, UserPlus, LogOut, Settings } from 'lucide-react';
@@ -12,6 +12,7 @@ import ParticleBackground from '@/components/ParticleBackground';
 import Header from '@/components/Header';
 import { useMessages, useConversation } from '@/hooks/useMessages';
 import { useGroupChats } from '@/hooks/useGroupChat';
+import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -27,6 +28,7 @@ const Messages = () => {
   const { conversations, loading: conversationsLoading, getOrCreateConversation, refetch } = useMessages();
   const { groupChats, loading: groupChatsLoading, createGroupChat, leaveGroup, refetch: refetchGroups } = useGroupChats();
   const { messages, loading: messagesLoading, sendMessage, uploadAttachment } = useConversation(activeConversationId);
+  const { typingText, setTyping } = useTypingIndicator(activeConversationId);
   
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -54,6 +56,7 @@ const Messages = () => {
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() && !pendingAttachment) return;
+    setTyping(false);
     const success = await sendMessage(newMessage, pendingAttachment || undefined);
     if (success) {
       setNewMessage('');
@@ -599,9 +602,13 @@ const Messages = () => {
                           </div>
                           <div>
                             <p className="font-medium">{activeGroupChat.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {activeGroupChat.participants.length} members
-                            </p>
+                            {typingText ? (
+                              <p className="text-xs text-primary animate-pulse">{typingText}</p>
+                            ) : (
+                              <p className="text-xs text-muted-foreground">
+                                {activeGroupChat.participants.length} members
+                              </p>
+                            )}
                           </div>
                         </>
                       ) : activeConversation ? (
@@ -620,7 +627,11 @@ const Messages = () => {
                             >
                               {activeConversation.participant.display_name}
                             </Link>
-                            <p className="text-xs text-muted-foreground">@{activeConversation.participant.username}</p>
+                            {typingText ? (
+                              <p className="text-xs text-primary animate-pulse">{typingText}</p>
+                            ) : (
+                              <p className="text-xs text-muted-foreground">@{activeConversation.participant.username}</p>
+                            )}
                           </div>
                         </>
                       ) : null}
@@ -785,8 +796,16 @@ const Messages = () => {
                       <Input
                         placeholder="Type a message..."
                         value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
+                        onChange={(e) => {
+                          setNewMessage(e.target.value);
+                          if (e.target.value.trim()) {
+                            setTyping(true);
+                          } else {
+                            setTyping(false);
+                          }
+                        }}
                         onKeyDown={handleKeyDown}
+                        onBlur={() => setTyping(false)}
                         className="flex-1"
                       />
                       <Button 
