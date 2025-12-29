@@ -193,12 +193,19 @@ const Messages = () => {
 
   const startConversation = async (otherUserId: string) => {
     const conversationId = await getOrCreateConversation(otherUserId);
-    if (conversationId) {
-      setSearchParams({ conversation: conversationId });
-      setSearchQuery('');
-      setSearchResults([]);
-      refetch();
+    if (!conversationId) {
+      toast({
+        title: 'Messaging not available',
+        description: 'Please sign in again and try sending a message.',
+        variant: 'destructive',
+      });
+      return;
     }
+
+    setSearchParams({ conversation: conversationId });
+    setSearchQuery('');
+    setSearchResults([]);
+    refetch();
   };
 
   const selectGroupChat = (groupId: string) => {

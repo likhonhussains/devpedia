@@ -15,6 +15,7 @@ import RecentActivity from '@/components/RecentActivity';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useMessages } from '@/hooks/useMessages';
+import { useToast } from '@/hooks/use-toast';
 
 interface ProfileData {
   id: string;
@@ -48,6 +49,7 @@ interface PostData {
 const Profile = () => {
   const { username } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { user, profile: currentUserProfile } = useAuth();
   const { getOrCreateConversation } = useMessages();
   
@@ -351,9 +353,15 @@ const Profile = () => {
                             className="gap-2"
                             onClick={async () => {
                               const conversationId = await getOrCreateConversation(profileData.user_id);
-                              if (conversationId) {
-                                navigate(`/messages?conversation=${conversationId}`);
+                              if (!conversationId) {
+                                toast({
+                                  title: 'Messaging not available',
+                                  description: 'Please sign in again and try sending a message.',
+                                  variant: 'destructive',
+                                });
+                                return;
                               }
+                              navigate(`/messages?conversation=${conversationId}`);
                             }}
                           >
                             <MessageCircle className="w-4 h-4" />
