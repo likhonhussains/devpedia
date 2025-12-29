@@ -351,18 +351,19 @@ const Profile = () => {
                             variant="outline"
                             size="sm"
                             className="gap-2"
-                            onClick={async () => {
-                              const conversationId = await getOrCreateConversation(profileData.user_id);
-                              if (!conversationId) {
-                                toast({
-                                  title: 'Messaging not available',
-                                  description: 'Please sign in again and try sending a message.',
-                                  variant: 'destructive',
-                                });
-                                return;
-                              }
-                              navigate(`/messages?conversation=${conversationId}`);
-                            }}
+                             onClick={async () => {
+                               try {
+                                 const conversationId = await getOrCreateConversation(profileData.user_id);
+                                 navigate(`/messages?conversation=${conversationId}`);
+                               } catch (e) {
+                                 const message = e instanceof Error ? e.message : 'Could not start a conversation.';
+                                 toast({
+                                   title: 'Messaging not available',
+                                   description: message,
+                                   variant: 'destructive',
+                                 });
+                               }
+                             }}
                           >
                             <MessageCircle className="w-4 h-4" />
                             Message
