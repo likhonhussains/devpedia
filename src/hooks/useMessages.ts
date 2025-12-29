@@ -137,8 +137,10 @@ export const useMessages = () => {
     setLoading(false);
   };
 
-  const getOrCreateConversation = async (otherUserId: string): Promise<string | null> => {
-    if (!user) return null;
+  const getOrCreateConversation = async (otherUserId: string): Promise<string> => {
+    if (!user) {
+      throw new Error('You need to sign in to send messages.');
+    }
 
     // Ensure we have an auth session (prevents RLS failures when client is effectively anonymous)
     const { data: sessionData } = await supabase.auth.getSession();
@@ -146,8 +148,7 @@ export const useMessages = () => {
       await supabase.auth.refreshSession();
       const { data: refreshed } = await supabase.auth.getSession();
       if (!refreshed.session) {
-        console.error('No active session found; cannot create conversation.');
-        return null;
+        throw new Error('Your session expired. Please sign in again.');
       }
     }
 
@@ -158,7 +159,7 @@ export const useMessages = () => {
       .eq('user_id', user.id);
 
     if (myConversationsError) {
-      console.error('Error loading user conversations:', myConversationsError);
+      throw new Error(myConversationsError.message);
     }
 
     if (myConversations) {
@@ -171,7 +172,7 @@ export const useMessages = () => {
           .maybeSingle();
 
         if (otherParticipantError) {
-          console.error('Error checking existing conversation participant:', otherParticipantError);
+          throw new Error(otherParticipantError.message);
         }
 
         if (otherParticipant) {
@@ -180,7 +181,7 @@ export const useMessages = () => {
       }
     }
 
-    // Create new conversation with creator_id
+    // Create new conversation
     const { data: newConv, error: convError } = await supabase
       .from('conversations')
       .insert({ creator_id: user.id })
@@ -188,8 +189,7 @@ export const useMessages = () => {
       .single();
 
     if (convError || !newConv) {
-      console.error('Error creating conversation:', convError);
-      return null;
+      throw new Error(convError?.message || 'Could not create a new conversation.');
     }
 
     // Add both participants
@@ -201,8 +201,7 @@ export const useMessages = () => {
       ]);
 
     if (partError) {
-      console.error('Error adding participants:', partError);
-      return null;
+      throw new Error(partError.message);
     }
 
     return newConv.id;
