@@ -57,11 +57,20 @@ const Messages = () => {
   const handleSendMessage = async () => {
     if (!newMessage.trim() && !pendingAttachment) return;
     setTyping(false);
-    const success = await sendMessage(newMessage, pendingAttachment || undefined);
-    if (success) {
+
+    const result = await sendMessage(newMessage, pendingAttachment || undefined);
+
+    if (result.ok) {
       setNewMessage('');
       setPendingAttachment(null);
+      return;
     }
+
+    toast({
+      title: 'Message failed to send',
+      description: 'error' in result ? result.error : 'Unknown error',
+      variant: 'destructive',
+    });
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {

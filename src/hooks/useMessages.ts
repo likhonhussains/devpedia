@@ -274,29 +274,50 @@ export const useConversation = (conversationId: string | null) => {
   };
 
   const sendMessage = async (
-    content: string, 
+    content: string,
     attachment?: { url: string; type: string; name: string }
-  ) => {
-    if (!conversationId || !user) return false;
-    if (!content.trim() && !attachment) return false;
-
-    const { error } = await supabase
-      .from('messages')
-      .insert({
-        conversation_id: conversationId,
-        sender_id: user.id,
-        content: content.trim() || (attachment ? `Sent ${attachment.type === 'image' ? 'an image' : 'a file'}` : ''),
-        attachment_url: attachment?.url || null,
-        attachment_type: attachment?.type || null,
-        attachment_name: attachment?.name || null,
-      });
-
-    if (error) {
-      console.error('Error sending message:', error);
-      return false;
+  ): Promise<{ ok: true } | { ok: false; error: string }> => {
+    if (!conversationId || !user) {
+      return { ok: false, error: 'You must be signed in and in a conversation to send messages.' };
     }
 
-    return true;
+    if (!content.trim() && !attachment) {
+      return { ok: false, error: 'Message is empty.' };
+    }
+
+    const payload = {
+      conversation_id: conversationId,
+      sender_id: user.id,
+      content:
+        content.trim() ||
+        (attachment ? `Sent ${attachment.type === 'image' ? 'an image' : 'a file'}` : ''),
+      attachment_url: attachment?.url || null,
+      attachment_type: attachment?.type || null,
+      attachment_name: attachment?.name || null,
+    };
+
+    const formatInsertError = (err: any) => {
+      const msg = err?.message || 'Unknown error';
+      const code = err?.code ? ` (${err.code})` : '';
+      const details = err?.details ? ` — ${err.details}` : '';
+      const hint = err?.hint ? ` — ${err.hint}` : '';
+      return `${msg}${code}${details}${hint}`;
+    };
+
+    // Attempt #1
+    const first = await supabase.from('messages').insert(payload);
+    if (!first.error) return { ok: true };
+
+    // One-time session refresh + retry (helps if the client session is stale and RLS rejects the insert)
+    await supabase.auth.refreshSession();
+
+    // Attempt #2
+    const second = await supabase.from('messages').insert(payload);
+    if (!second.error) return { ok: true };
+
+    const formatted = formatInsertError(second.error);
+    console.error('Error sending message:', second.error);
+    return { ok: false, error: formatted };
   };
 
   const uploadAttachment = async (file: File): Promise<{ url: string; type: string; name: string } | null> => {
