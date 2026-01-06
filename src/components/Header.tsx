@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LogOut, User, History, MessageCircle, Users, Trophy, Award, Menu, BookOpen, UsersRound, Globe, UserCheck, Library, BookMarked, ChevronDown, Sparkles, Bell, Moon, Sun } from 'lucide-react';
+import { LogOut, User, History, Users, Trophy, Award, Menu, BookOpen, UsersRound, Globe, UserCheck, Library, BookMarked, ChevronDown, Sparkles, Bell, Moon, Sun } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
-import { useMessages } from '@/hooks/useMessages';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
@@ -13,11 +12,9 @@ import logoIcon from '@/assets/logo.png';
 
 const Header = () => {
   const { user, profile, signOut } = useAuth();
-  const { getTotalUnreadCount } = useMessages();
   const { unreadCount: notificationCount } = useNotifications();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
-  const unreadCount = getTotalUnreadCount();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -34,7 +31,6 @@ const Header = () => {
   const menuItems = [
     { icon: Trophy, label: 'Leaderboard', path: '/leaderboard' },
     { icon: Users, label: 'People', path: '/users' },
-    { icon: MessageCircle, label: 'Messages', path: '/messages', badge: unreadCount },
   ];
 
   const groupItems = [
@@ -78,11 +74,6 @@ const Header = () => {
                     >
                       <item.icon className="w-4 h-4" />
                       <span className="hidden lg:inline">{item.label}</span>
-                      {item.badge && item.badge > 0 && (
-                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center">
-                          {item.badge > 9 ? '9+' : item.badge}
-                        </span>
-                      )}
                     </Button>
                   ))}
 
@@ -305,11 +296,6 @@ const Header = () => {
                             >
                               <item.icon className="w-5 h-5 text-muted-foreground" />
                               <span>{item.label}</span>
-                              {item.badge && item.badge > 0 && (
-                                <span className="ml-auto bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
-                                  {item.badge > 9 ? '9+' : item.badge}
-                                </span>
-                              )}
                             </button>
                           ))}
                           {/* Groups submenu in mobile */}
