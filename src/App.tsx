@@ -13,7 +13,6 @@ import Article from "./pages/Article";
 import CreatePost from "./pages/CreatePost";
 import Auth from "./pages/Auth";
 import ReadingHistory from "./pages/ReadingHistory";
-import Messages from "./pages/Messages";
 import UserSearch from "./pages/UserSearch";
 import Leaderboard from "./pages/Leaderboard";
 import Drafts from "./pages/Drafts";
@@ -53,7 +52,6 @@ const App = () => (
                   <Route path="/drafts" element={<Drafts />} />
                   <Route path="/achievements" element={<Achievements />} />
                   <Route path="/history" element={<ReadingHistory />} />
-                  <Route path="/messages" element={<Messages />} />
                   <Route path="/users" element={<UserSearch />} />
                   <Route path="/leaderboard" element={<Leaderboard />} />
                   <Route path="/groups" element={<Groups />} />

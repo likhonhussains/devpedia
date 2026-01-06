@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Calendar, Users, UserPlus, Edit3, FileText, StickyNote, Video, PenSquare, MessageCircle, Camera, Award } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Users, UserPlus, Edit3, FileText, StickyNote, Video, PenSquare, Camera, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ParticleBackground from '@/components/ParticleBackground';
 import ContentCard from '@/components/ContentCard';
@@ -14,7 +14,6 @@ import SocialLinks from '@/components/SocialLinks';
 import RecentActivity from '@/components/RecentActivity';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useMessages } from '@/hooks/useMessages';
 import { useToast } from '@/hooks/use-toast';
 
 interface ProfileData {
@@ -51,7 +50,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, profile: currentUserProfile } = useAuth();
-  const { getOrCreateConversation } = useMessages();
+  
   
   const [activeTab, setActiveTab] = useState('posts');
   const [isFollowing, setIsFollowing] = useState(false);
@@ -346,27 +345,6 @@ const Profile = () => {
                           >
                             <UserPlus className="w-4 h-4" />
                             {isFollowing ? 'Following' : 'Follow'}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-2"
-                             onClick={async () => {
-                               try {
-                                 const conversationId = await getOrCreateConversation(profileData.user_id);
-                                 navigate(`/messages?conversation=${conversationId}`);
-                               } catch (e) {
-                                 const message = e instanceof Error ? e.message : 'Could not start a conversation.';
-                                 toast({
-                                   title: 'Messaging not available',
-                                   description: message,
-                                   variant: 'destructive',
-                                 });
-                               }
-                             }}
-                          >
-                            <MessageCircle className="w-4 h-4" />
-                            Message
                           </Button>
                         </>
                       ) : null}
